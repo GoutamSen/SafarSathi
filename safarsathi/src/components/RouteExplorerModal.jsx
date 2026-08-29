@@ -153,16 +153,21 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
   ];
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={onClose} style={{ padding: 0, zIndex: 9999 }}>
       <div
         className="modal-content"
         onClick={(e) => e.stopPropagation()}
         style={{
-          maxWidth: '660px',
-          borderRadius: '24px',
+          width: '100vw',
+          height: '100vh',
+          maxWidth: '100vw',
+          maxHeight: '100vh',
+          borderRadius: 0,
           padding: 0,
           overflow: 'hidden',
           backgroundColor: '#FFFFFF',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         {/* Top Explorer Header Bar */}
@@ -362,7 +367,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
         )}
 
         {/* Modal Scrollable Content Container */}
-        <div style={{ padding: '1.25rem 1.5rem', maxHeight: '420px', overflowY: 'auto' }}>
+        <div style={{ padding: '1.25rem 1.5rem', flex: 1, overflowY: 'auto' }}>
 
           {/* 1. LIVE NOW TAB CONTENT */}
           {activeTab === 'live' && (
