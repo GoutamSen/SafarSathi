@@ -17,7 +17,7 @@ import {
   Lock as LockIcon
 } from 'lucide-react';
 
-export default function Hero({ onSearch, onOfferRideClick }) {
+export default function Hero({ onSearch, onOfferRideClick, onOpenCorridorExplorer }) {
   const [fromLocation, setFromLocation] = useState('Indore');
   const [toLocation, setToLocation] = useState('Khargone');
   const [journeyDate, setJourneyDate] = useState('2026-08-28');
@@ -706,118 +706,69 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                   <span>{activeTab === 'offer' ? 'PUBLISH RIDE ROUTE' : 'FIND RIDES'}</span>
                 </button>
               </form>
+            </div>
 
-              {/* POPULAR QUICK ROUTES CHIPS */}
-              <div style={{ marginTop: '0.75rem', paddingTop: '0.65rem', borderTop: '1px solid #F3F4F6' }}>
-                <div style={{ fontSize: '0.675rem', fontWeight: '800', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <Zap size={12} style={{ color: '#E6A700' }} />
+            {/* DEDICATED POPULAR CORRIDORS BLOCK (ROUTE EXPLORER LAUNCHER) */}
+            <div
+              style={{
+                marginTop: '0.85rem',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '18px',
+                padding: '0.85rem 1rem',
+                border: '1.5px solid #E5E7EB',
+                boxShadow: '0 4px 14px rgba(0, 0, 0, 0.04)',
+              }}
+            >
+              <div style={{ marginBottom: '0.15rem' }}>
+                <div style={{ fontSize: '0.825rem', fontWeight: '800', color: '#111827', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Star size={15} fill="#E6A700" style={{ color: '#E6A700' }} />
                   <span>Popular Corridors</span>
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                  {[
-                    { from: 'Indore', to: 'Khargone' },
-                    { from: 'Indore', to: 'Bhopal' },
-                    { from: 'Indore', to: 'Ujjain' },
-                  ].map((route) => (
-                    <button
-                      key={`${route.from}-${route.to}`}
-                      type="button"
-                      onClick={() => {
-                        setFromLocation(route.from);
-                        setToLocation(route.to);
-                      }}
-                      style={{
-                        padding: '0.2rem 0.5rem',
-                        borderRadius: 'var(--radius-full)',
-                        backgroundColor: '#FFF4CC',
-                        border: '1px solid rgba(230, 167, 0, 0.3)',
-                        color: '#111827',
-                        fontSize: '0.7rem',
-                        fontWeight: '700',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.2rem',
-                      }}
-                    >
-                      <span>{route.from}</span>
-                      <span style={{ color: '#C98F00' }}>➔</span>
-                      <span>{route.to}</span>
-                    </button>
-                  ))}
                 </div>
               </div>
 
-              {/* NEARBY LIVE RIDES PREVIEW */}
-              <div style={{ marginTop: '0.65rem', paddingTop: '0.6rem', borderTop: '1px solid #F3F4F6' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-                  <div style={{ fontSize: '0.675rem', fontWeight: '800', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    <Car size={12} style={{ color: '#E6A700' }} />
-                    <span>Nearby Active Rides</span>
-                  </div>
-                  <span style={{ fontSize: '0.65rem', color: '#E6A700', fontWeight: '800' }}>Live Now</span>
-                </div>
+              <div style={{ fontSize: '0.725rem', color: '#6B7280', marginBottom: '0.65rem', fontWeight: '500' }}>
+                Explore what's happening on popular routes
+              </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                  <div
-                    onClick={handleSearchSubmit}
+              {/* 4 Clickable Corridor Route Explorer Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                {[
+                  { from: 'Indore', to: 'Khargone', stats: { total: 342, completedYesterday: 24, activeNow: 8, upcomingToday: 17 }, activeText: '8 active · 17 today' },
+                  { from: 'Indore', to: 'Bhopal', stats: { total: 215, completedYesterday: 19, activeNow: 5, upcomingToday: 12 }, activeText: '5 active · 12 today' },
+                  { from: 'Indore', to: 'Ujjain', stats: { total: 180, completedYesterday: 14, activeNow: 4, upcomingToday: 9 }, activeText: '4 active · 9 today' },
+                  { from: 'Indore', to: 'Dewas', stats: { total: 260, completedYesterday: 22, activeNow: 6, upcomingToday: 14 }, activeText: '6 active · 14 today' },
+                ].map((route) => (
+                  <button
+                    key={`${route.from}-${route.to}`}
+                    type="button"
+                    onClick={() => {
+                      if (onOpenCorridorExplorer) {
+                        onOpenCorridorExplorer(route);
+                      }
+                    }}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.4rem 0.55rem',
+                      padding: '0.5rem 0.65rem',
+                      borderRadius: '12px',
                       backgroundColor: '#FAFAFA',
-                      borderRadius: '10px',
                       border: '1px solid #E5E7EB',
+                      textAlign: 'left',
                       cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.15rem',
+                      transition: 'all 0.2s ease',
+                      boxShadow: 'var(--shadow-sm)',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ fontSize: '0.85rem' }}>🚗</span>
-                      <div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#111827' }}>
-                          Rajesh S. ➔ Khargone
-                        </div>
-                        <div style={{ fontSize: '0.65rem', color: '#6B7280' }}>
-                          Today • 08:30 AM • 2 seats left
-                        </div>
-                      </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', fontSize: '0.775rem', fontWeight: '700', color: '#111827' }}>
+                      <span>{route.from} <span style={{ color: '#E6A700' }}>➔</span> {route.to}</span>
                     </div>
-                    <span style={{ fontSize: '0.775rem', fontWeight: '800', color: '#C98F00', backgroundColor: '#FFF4CC', padding: '0.12rem 0.4rem', borderRadius: '6px' }}>
-                      ₹160
-                    </span>
-                  </div>
-
-                  <div
-                    onClick={handleSearchSubmit}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.4rem 0.55rem',
-                      backgroundColor: '#FAFAFA',
-                      borderRadius: '10px',
-                      border: '1px solid #E5E7EB',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <span style={{ fontSize: '0.85rem' }}>🚗</span>
-                      <div>
-                        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#111827' }}>
-                          Vikram S. ➔ Bhopal
-                        </div>
-                        <div style={{ fontSize: '0.65rem', color: '#6B7280' }}>
-                          Today • 09:15 AM • 3 seats left
-                        </div>
-                      </div>
+                    <div style={{ fontSize: '0.675rem', fontWeight: '700', color: '#10B981', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />
+                      <span>{route.activeText}</span>
                     </div>
-                    <span style={{ fontSize: '0.775rem', fontWeight: '800', color: '#C98F00', backgroundColor: '#FFF4CC', padding: '0.12rem 0.4rem', borderRadius: '6px' }}>
-                      ₹220
-                    </span>
-                  </div>
-                </div>
+                  </button>
+                ))}
               </div>
             </div>
 

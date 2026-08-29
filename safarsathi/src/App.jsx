@@ -13,9 +13,11 @@ import CTASection from './components/CTASection';
 import Footer from './components/Footer';
 import { JourneyDetailModal, OfferRideModal, JoinModal } from './components/Modals';
 import RideLifecycleModal from './components/RideLifecycleModal';
+import RouteExplorerModal from './components/RouteExplorerModal';
 
 export default function App() {
   const [selectedJourney, setSelectedJourney] = useState(null);
+  const [selectedCorridor, setSelectedCorridor] = useState(null);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [joinModalMode, setJoinModalMode] = useState('join');
@@ -307,6 +309,7 @@ export default function App() {
         <Hero
           onSearch={handleSearchSubmit}
           onOfferRideClick={handleOpenOffer}
+          onOpenCorridorExplorer={(corridor) => setSelectedCorridor(corridor)}
         />
 
         {/* 2. TRUST / STATS SECTION (Visible on Scroll) */}
@@ -444,6 +447,17 @@ export default function App() {
           mode={joinModalMode}
           onClose={() => setIsJoinModalOpen(false)}
           onSuccess={handleLoginSuccess}
+        />
+      )}
+
+      {selectedCorridor && (
+        <RouteExplorerModal
+          corridor={selectedCorridor}
+          onClose={() => setSelectedCorridor(null)}
+          onSelectJourney={(journey) => {
+            setSelectedJourney(journey);
+            setActiveModalRole('passenger');
+          }}
         />
       )}
 
