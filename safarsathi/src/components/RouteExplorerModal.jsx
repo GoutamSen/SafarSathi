@@ -8,10 +8,9 @@ import {
   ShieldCheck,
   Star,
   Layers,
-  Car,
-  Compass
+  Car
 } from 'lucide-react';
-import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 // Helper component to adjust Leaflet map center dynamically
@@ -30,10 +29,10 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
   if (!corridor) return null;
 
   const [activeStatus, setActiveStatus] = useState('live'); // 'live' | 'upcoming' | 'completed'
-  const [selectedRideId, setSelectedRideId] = useState('re-live-1');
-  const [mapStyle, setMapStyle] = useState('google-roadmap'); // 'google-roadmap' | 'google-satellite' | 'osm'
+  const [selectedRideId, setSelectedRideId] = useState(null); // Default null: No card open until marker clicked
+  const [mapStyle, setMapStyle] = useState('google-roadmap'); // 'google-roadmap' | 'google-satellite'
 
-  // Route Corridor Coordinates (Indore -> Khargone Highway SH-27 / NH-52)
+  // Highway Route Corridor Coordinates (Indore -> Khargone SH-27)
   const routePolyline = [
     [22.7196, 75.8577], // Indore
     [22.6344, 75.8078], // Rau Circle
@@ -45,7 +44,6 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
 
   const mapCenter = [22.25, 75.72]; // Midpoint of Indore-Khargone corridor
 
-  // Stats fallback
   const stats = corridor.stats || {
     total: 342,
     completedYesterday: 24,
@@ -53,7 +51,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     upcomingToday: 17,
   };
 
-  // Live Rides Data with Real Lat/Lng GPS Coordinates
+  // 1. Live Rides Data
   const liveRides = [
     {
       id: `re-live-1`,
@@ -108,7 +106,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     },
   ];
 
-  // Upcoming Scheduled Rides
+  // 2. Upcoming Scheduled Rides
   const upcomingRides = [
     {
       id: `re-up-1`,
@@ -116,7 +114,8 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
       routeTo: corridor.to || 'Khargone',
       lat: 22.7196,
       lng: 75.8577,
-      currentLocation: 'Indore Rajwada Pickup Hub',
+      clusterCount: 4,
+      currentLocation: 'Rajwada Pickup Hub (4 Rides)',
       departureTime: 'Today · 10:00 AM',
       driverName: 'Suresh Patel',
       driverRating: '4.90',
@@ -132,7 +131,8 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
       routeTo: corridor.to || 'Khargone',
       lat: 22.6900,
       lng: 75.8300,
-      currentLocation: 'Bhawarkua Bus Station',
+      clusterCount: 3,
+      currentLocation: 'Bhawarkua Station (3 Rides)',
       departureTime: 'Today · 12:30 PM',
       driverName: 'Neha Verma',
       driverRating: '4.88',
@@ -144,19 +144,19 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     },
   ];
 
-  // Completed History Items
+  // 3. Past Trips Log
   const completedRides = [
     {
       id: `re-comp-1`,
       routeFrom: corridor.from || 'Indore',
       routeTo: corridor.to || 'Khargone',
-      lat: 21.8247,
-      lng: 75.6102,
-      currentLocation: 'Khargone Bus Terminal (Completed)',
-      departureTime: 'Completed Yesterday (24 Rides)',
-      driverName: 'Verified Corridor Trips Log',
+      lat: 22.2500,
+      lng: 75.7200,
+      currentLocation: 'Corridor Highway 3 (24 Completed Yesterday)',
+      departureTime: 'Completed Yesterday (24 Trips)',
+      driverName: 'Rajesh Sharma & 23 Others',
       driverRating: '4.95 Avg',
-      vehicleModel: '100% Aadhaar Verified Rides',
+      vehicleModel: '100% Aadhaar Verified Corridor Rides',
       costPerSeat: '₹165 Avg',
       availableSeats: 0,
       driverAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
@@ -171,12 +171,13 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
       ? upcomingRides
       : completedRides;
 
-  const selectedRide =
-    currentRidesList.find((r) => r.id === selectedRideId) || currentRidesList[0] || liveRides[0];
+  const selectedRide = selectedRideId
+    ? currentRidesList.find((r) => r.id === selectedRideId)
+    : null;
 
-  // Helper function to create custom Leaflet HTML Marker Icons
-  const createCustomMarkerIcon = (driverName, price, isSelected, status) => {
-    const bgColor =
+  // Minimalist Pure Colored Marker Pins
+  const createCustomMarkerIcon = (ride, isSelected, status) => {
+    const color =
       status === 'live'
         ? '#10B981'
         : status === 'upcoming'
@@ -186,38 +187,20 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     const html = `
       <div style="
         display: flex;
-        flex-direction: column;
         align-items: center;
-        transform: translate(-50%, -100%);
+        justify-content: center;
+        transform: translate(-50%, -50%);
         cursor: pointer;
         z-index: ${isSelected ? 1000 : 100};
       ">
         <div style="
-          background-color: ${isSelected ? bgColor : '#1E293B'};
-          color: #FFFFFF;
-          padding: 3px 8px;
-          border-radius: 12px;
-          font-size: 11px;
-          font-weight: 800;
-          font-family: sans-serif;
-          white-space: nowrap;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-          border: 1.5px solid ${bgColor};
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        ">
-          <span>🚗 ${driverName.split(' ')[0]}</span>
-          <span style="background: rgba(255,255,255,0.25); padding: 1px 4px; border-radius: 4px; font-size: 10px;">${price}</span>
-        </div>
-        <div style="
-          width: 14px;
-          height: 14px;
+          width: ${isSelected ? '20px' : '16px'};
+          height: ${isSelected ? '20px' : '16px'};
           border-radius: 50%;
-          background-color: ${bgColor};
-          border: 2px solid #FFFFFF;
-          margin-top: 2px;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+          background-color: ${color};
+          border: ${isSelected ? '3px solid #FFFFFF' : '2.5px solid #FFFFFF'};
+          box-shadow: 0 0 ${isSelected ? '16px' : '8px'} ${color};
+          transition: all 0.2s ease;
         "></div>
       </div>
     `;
@@ -225,12 +208,11 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     return L.divIcon({
       html,
       className: 'custom-leaflet-pin',
-      iconSize: [80, 40],
-      iconAnchor: [40, 40],
+      iconSize: [24, 24],
+      iconAnchor: [12, 12],
     });
   };
 
-  // Custom Origin / Destination Pin Icons
   const createCityPinIcon = (cityName, isOrigin) => {
     const color = isOrigin ? '#EA4335' : '#34A853';
     const html = `
@@ -243,45 +225,39 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
         <span style="
           background-color: #1E293B;
           color: #FFFFFF;
-          padding: 2px 7px;
+          padding: 2px 6px;
           border-radius: 6px;
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 800;
           font-family: sans-serif;
           white-space: nowrap;
           border: 1px solid ${color};
-          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         ">
           ${isOrigin ? '📍' : '🏁'} ${cityName}
         </span>
         <div style="
-          width: 16px;
-          height: 16px;
+          width: 12px;
+          height: 12px;
           border-radius: 50%;
           background-color: ${color};
-          border: 3px solid #FFFFFF;
+          border: 2px solid #FFFFFF;
           margin-top: 2px;
-          box-shadow: 0 0 10px ${color};
         "></div>
       </div>
     `;
     return L.divIcon({
       html,
       className: 'custom-city-pin',
-      iconSize: [70, 35],
-      iconAnchor: [35, 35],
+      iconSize: [60, 30],
+      iconAnchor: [30, 30],
     });
   };
 
-  // Map Tile URL based on style selection
   const getTileUrl = () => {
     if (mapStyle === 'google-satellite') {
       return 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}';
     }
-    if (mapStyle === 'google-roadmap') {
-      return 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
-    }
-    return 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+    return 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
   };
 
   return (
@@ -303,16 +279,16 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           color: '#FFFFFF',
         }}
       >
-        {/* 1. TOP REAL MAP BRANDED HEADER */}
+        {/* 1. CLEAN COMPACT HEADER */}
         <div
           style={{
-            padding: '1rem 1.25rem',
+            padding: '0.75rem 1.25rem 0.5rem 1.25rem',
             backgroundColor: '#1E293B',
             color: '#FFFFFF',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
             zIndex: 2000,
           }}
         >
@@ -323,8 +299,8 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                 background: 'rgba(255, 255, 255, 0.1)',
                 border: 'none',
                 borderRadius: '50%',
-                width: '36px',
-                height: '36px',
+                width: '32px',
+                height: '32px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -332,187 +308,131 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                 color: '#FFFFFF',
               }}
             >
-              <ArrowLeft size={20} />
+              <ArrowLeft size={18} />
             </button>
             <div>
-              <span style={{ fontSize: '0.675rem', color: '#4285F4', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                <span style={{ color: '#4285F4' }}>G</span>
-                <span style={{ color: '#EA4335' }}>o</span>
-                <span style={{ color: '#FBBC05' }}>o</span>
-                <span style={{ color: '#4285F4' }}>g</span>
-                <span style={{ color: '#34A853' }}>l</span>
-                <span style={{ color: '#EA4335' }}>e</span>
-                <span style={{ color: '#94A3B8', marginLeft: '4px' }}>MAPS REAL TILE LAYER</span>
-              </span>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: '800', margin: 0, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 {corridor.from} <span style={{ color: '#E6A700' }}>➔</span> {corridor.to}
               </h3>
+              <span style={{ fontSize: '0.65rem', color: '#E6A700', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', lineHeight: 1, marginTop: '2px' }}>
+                POPULAR CORRIDOR
+              </span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <button
-              onClick={() => setMapStyle(mapStyle === 'google-roadmap' ? 'google-satellite' : 'google-roadmap')}
-              title="Toggle Map Style"
-              style={{
-                padding: '0.35rem 0.65rem',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: '8px',
-                color: '#FFFFFF',
-                fontSize: '0.75rem',
-                fontWeight: '700',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-              }}
-            >
-              <Layers size={14} />
-              <span>{mapStyle === 'google-roadmap' ? 'Satellite' : 'Roadmap'}</span>
-            </button>
-
-            <button
-              onClick={onClose}
-              style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: 'none',
-                borderRadius: '50%',
-                width: '36px',
-                height: '36px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: '#FFFFFF',
-              }}
-            >
-              <X size={20} />
-            </button>
-          </div>
+          <button
+            onClick={onClose}
+            style={{
+              background: 'rgba(255, 255, 255, 0.1)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              color: '#FFFFFF',
+            }}
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        {/* 2. STATUS FILTER PILLS BAR */}
+        {/* 2. ULTRA SLEEK SEGMENTED UNDERLINE TABS STRIP (Live | Upcoming | Past) */}
         <div
           style={{
             backgroundColor: '#1E293B',
-            padding: '0.75rem 1.25rem',
+            padding: '0 1.25rem',
             borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
-            flexWrap: 'wrap',
-            gap: '0.5rem',
+            gap: '1.5rem',
             zIndex: 2000,
           }}
         >
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              onClick={() => {
-                setActiveStatus('live');
-                setSelectedRideId(liveRides[0].id);
-              }}
-              style={{
-                padding: '0.35rem 0.75rem',
-                borderRadius: '20px',
-                border: activeStatus === 'live' ? '1.5px solid #10B981' : '1px solid rgba(255, 255, 255, 0.15)',
-                backgroundColor: activeStatus === 'live' ? 'rgba(16, 185, 129, 0.25)' : 'transparent',
-                color: activeStatus === 'live' ? '#34D399' : '#94A3B8',
-                fontSize: '0.8rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-              }}
-            >
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />
-              🟢 {stats.activeNow} Live Rides
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveStatus('upcoming');
-                setSelectedRideId(upcomingRides[0].id);
-              }}
-              style={{
-                padding: '0.35rem 0.75rem',
-                borderRadius: '20px',
-                border: activeStatus === 'upcoming' ? '1.5px solid #E6A700' : '1px solid rgba(255, 255, 255, 0.15)',
-                backgroundColor: activeStatus === 'upcoming' ? 'rgba(230, 167, 0, 0.25)' : 'transparent',
-                color: activeStatus === 'upcoming' ? '#FBBF24' : '#94A3B8',
-                fontSize: '0.8rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-              }}
-            >
-              🟡 {stats.upcomingToday} Upcoming
-            </button>
-
-            <button
-              onClick={() => {
-                setActiveStatus('completed');
-                setSelectedRideId(completedRides[0].id);
-              }}
-              style={{
-                padding: '0.35rem 0.75rem',
-                borderRadius: '20px',
-                border: activeStatus === 'completed' ? '1.5px solid #94A3B8' : '1px solid rgba(255, 255, 255, 0.15)',
-                backgroundColor: activeStatus === 'completed' ? 'rgba(148, 163, 184, 0.25)' : 'transparent',
-                color: activeStatus === 'completed' ? '#CBD5E1' : '#94A3B8',
-                fontSize: '0.8rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-              }}
-            >
-              ⚪ {stats.total} Completed
-            </button>
-          </div>
-
-          <div style={{ fontSize: '0.725rem', color: '#94A3B8', fontWeight: '600' }}>
-            {activeStatus === 'live' && `${stats.completedYesterday} completed yesterday on SH-27`}
-            {activeStatus === 'upcoming' && `17 scheduled departures today`}
-            {activeStatus === 'completed' && `Historical trips on Highway 3`}
-          </div>
-        </div>
-
-        {/* 3. LEAFLET REAL MAP TILE CONTAINER */}
-        <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-
-          {/* Floating Helper Banner */}
-          <div
+          {/* Live Tab */}
+          <button
+            onClick={() => {
+              setActiveStatus('live');
+              setSelectedRideId(null);
+            }}
             style={{
-              position: 'absolute',
-              top: '12px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              zIndex: 1000,
-              backgroundColor: 'rgba(15, 23, 42, 0.9)',
-              backdropFilter: 'blur(8px)',
-              padding: '0.35rem 0.85rem',
-              borderRadius: '20px',
-              border: '1px solid rgba(66, 133, 244, 0.4)',
-              fontSize: '0.75rem',
+              padding: '0.65rem 0',
+              background: 'none',
+              border: 'none',
+              color: activeStatus === 'live' ? '#34D399' : '#94A3B8',
+              fontSize: '0.825rem',
               fontWeight: '800',
-              color: '#60A5FA',
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: '0.35rem',
-              pointerEvents: 'none',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+              position: 'relative',
+              borderBottom: activeStatus === 'live' ? '2.5px solid #10B981' : '2.5px solid transparent',
+              transition: 'all 0.2s ease',
             }}
           >
-            <Compass size={14} className="spin-slow" />
-            <span>Tap any driver marker on Google Map to inspect & book</span>
-          </div>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />
+            Live {stats.activeNow}
+          </button>
 
-          {/* Real Leaflet Map */}
+          {/* Upcoming Tab */}
+          <button
+            onClick={() => {
+              setActiveStatus('upcoming');
+              setSelectedRideId(null);
+            }}
+            style={{
+              padding: '0.65rem 0',
+              background: 'none',
+              border: 'none',
+              color: activeStatus === 'upcoming' ? '#FBBF24' : '#94A3B8',
+              fontSize: '0.825rem',
+              fontWeight: '800',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              position: 'relative',
+              borderBottom: activeStatus === 'upcoming' ? '2.5px solid #E6A700' : '2.5px solid transparent',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#E6A700', display: 'inline-block' }} />
+            Upcoming {stats.upcomingToday}
+          </button>
+
+          {/* Past Tab */}
+          <button
+            onClick={() => {
+              setActiveStatus('completed');
+              setSelectedRideId(null);
+            }}
+            style={{
+              padding: '0.65rem 0',
+              background: 'none',
+              border: 'none',
+              color: activeStatus === 'completed' ? '#CBD5E1' : '#94A3B8',
+              fontSize: '0.825rem',
+              fontWeight: '800',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              position: 'relative',
+              borderBottom: activeStatus === 'completed' ? '2.5px solid #94A3B8' : '2.5px solid transparent',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            ✓ Past {stats.total}
+          </button>
+        </div>
+
+        {/* 3. HERO MAP VIEWPORT CANVAS */}
+        <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+
+          {/* Leaflet Map */}
           <div style={{ flex: 1, width: '100%', height: '100%', position: 'relative', zIndex: 1 }}>
             <MapContainer
               center={mapCenter}
@@ -522,40 +442,35 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
             >
               <MapAutoCenter center={mapCenter} zoom={9} />
 
-              {/* Real Tile Layer (Google Maps Vector / Satellite / OSM) */}
               <TileLayer
                 url={getTileUrl()}
-                attribution='&copy; <a href="https://maps.google.com">Google Maps Platform</a>'
+                attribution='&copy; Google Maps'
               />
 
-              {/* Highway Corridor Blue Polyline */}
               <Polyline
                 positions={routePolyline}
-                color="#4285F4"
-                weight={6}
+                color={activeStatus === 'live' ? '#10B981' : activeStatus === 'upcoming' ? '#E6A700' : '#4285F4'}
+                weight={5}
                 opacity={0.85}
               />
 
-              {/* Origin Marker (Indore) */}
               <Marker
                 position={[22.7196, 75.8577]}
                 icon={createCityPinIcon('Indore', true)}
               />
 
-              {/* Destination Marker (Khargone) */}
               <Marker
                 position={[21.8247, 75.6102]}
                 icon={createCityPinIcon('Khargone', false)}
               />
 
-              {/* Driver Ride Markers */}
               {currentRidesList.map((ride) => {
-                const isSelected = selectedRide.id === ride.id;
+                const isSelected = selectedRide && selectedRide.id === ride.id;
                 return (
                   <Marker
                     key={ride.id}
                     position={[ride.lat, ride.lng]}
-                    icon={createCustomMarkerIcon(ride.driverName, ride.costPerSeat, isSelected, activeStatus)}
+                    icon={createCustomMarkerIcon(ride, isSelected, activeStatus)}
                     eventHandlers={{
                       click: () => setSelectedRideId(ride.id),
                     }}
@@ -563,6 +478,33 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                 );
               })}
             </MapContainer>
+
+            {/* Floating Satellite Switch Control */}
+            <button
+              onClick={() => setMapStyle(mapStyle === 'google-roadmap' ? 'google-satellite' : 'google-roadmap')}
+              style={{
+                position: 'absolute',
+                bottom: '16px',
+                right: '16px',
+                zIndex: 1000,
+                backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                backdropFilter: 'blur(6px)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '20px',
+                padding: '0.35rem 0.75rem',
+                color: '#FFFFFF',
+                fontSize: '0.725rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+              }}
+            >
+              <Layers size={13} />
+              <span>{mapStyle === 'google-roadmap' ? 'Satellite' : 'Roadmap'}</span>
+            </button>
           </div>
 
           {/* 4. SLIDE-UP RIDE DETAIL BOTTOM SHEET CARD */}
@@ -573,13 +515,12 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                 color: '#111827',
                 borderRadius: '24px 24px 0 0',
                 padding: '1.25rem',
-                borderTop: '3px solid #4285F4',
+                borderTop: '3px solid #E6A700',
                 boxShadow: '0 -10px 30px rgba(0, 0, 0, 0.3)',
                 zIndex: 2000,
                 position: 'relative',
               }}
             >
-              {/* Header Status & Price */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
                 <div
                   style={{
@@ -605,20 +546,41 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                   />
                   <span>
                     {activeStatus === 'live'
-                      ? '🟢 LIVE ON GOOGLE MAPS'
+                      ? '🟢 LIVE ON ROUTE'
                       : activeStatus === 'upcoming'
-                      ? '🟡 UPCOMING SCHEDULED'
-                      : '⚪ COMPLETED TRIP'}
+                      ? '🟡 UPCOMING DEPARTURE'
+                      : '⚪ PAST TRIP'}
                   </span>
                 </div>
 
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontSize: '1.3rem', fontWeight: '800', color: '#111827' }}>{selectedRide.costPerSeat}</span>
-                  <span style={{ fontSize: '0.675rem', color: '#6B7280', display: 'block', lineHeight: 1 }}>per seat</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '1.3rem', fontWeight: '800', color: '#111827' }}>{selectedRide.costPerSeat}</span>
+                    <span style={{ fontSize: '0.675rem', color: '#6B7280', display: 'block', lineHeight: 1 }}>per seat</span>
+                  </div>
+
+                  {/* Close Card Button */}
+                  <button
+                    onClick={() => setSelectedRideId(null)}
+                    title="Close Details"
+                    style={{
+                      background: '#F3F4F6',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: '30px',
+                      height: '30px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: '#4B5563',
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
                 </div>
               </div>
 
-              {/* Driver Details */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.65rem' }}>
                 <img
                   src={selectedRide.driverAvatar}
@@ -641,7 +603,6 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                 </div>
               </div>
 
-              {/* Location & Time Banner */}
               <div style={{ backgroundColor: '#FAFAFA', borderRadius: '12px', padding: '0.65rem 0.85rem', border: '1px solid #F3F4F6', marginBottom: '0.75rem' }}>
                 <div style={{ fontSize: '0.775rem', fontWeight: '800', color: '#E6A700', marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                   <Clock size={13} />
@@ -650,19 +611,18 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
 
                 <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#111827', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.2rem' }}>
                   <span>{corridor.from}</span>
-                  <span style={{ color: '#4285F4', fontWeight: '800' }}>──────────────→</span>
+                  <span style={{ color: '#E6A700', fontWeight: '800' }}>──────────────→</span>
                   <span>{corridor.to}</span>
                 </div>
 
                 {selectedRide.currentLocation && (
                   <div style={{ fontSize: '0.75rem', color: '#4B5563', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                    <Navigation size={13} style={{ color: '#4285F4' }} />
-                    <span>Google Maps GPS: <strong>{selectedRide.currentLocation}</strong> ({selectedRide.lat}, {selectedRide.lng})</span>
+                    <Navigation size={13} style={{ color: '#E6A700' }} />
+                    <span>Location: <strong>{selectedRide.currentLocation}</strong></span>
                   </div>
                 )}
               </div>
 
-              {/* Seats & CTA */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
                 <span style={{ fontSize: '0.8rem', color: '#374151', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                   <Users size={14} style={{ color: '#E6A700' }} />
