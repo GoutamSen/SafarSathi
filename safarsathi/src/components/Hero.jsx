@@ -13,7 +13,8 @@ import {
   Zap,
   Star,
   CheckCircle2,
-  Car
+  Car,
+  Lock as LockIcon
 } from 'lucide-react';
 
 export default function Hero({ onSearch, onOfferRideClick }) {
@@ -62,13 +63,13 @@ export default function Hero({ onSearch, onOfferRideClick }) {
       id="hero"
       style={{
         position: 'relative',
-        padding: '0.5rem 0 1.25rem 0',
+        padding: '2rem 0 1.25rem 0',
         backgroundColor: '#FFFFFF',
         overflow: 'hidden',
         minHeight: 'calc(100vh - 56px)',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
       }}
     >
       {/* Subtle Gold Ambient Background Glows */}
@@ -99,6 +100,52 @@ export default function Hero({ onSearch, onOfferRideClick }) {
         }}
       />
 
+      {/* Option 1: Subtle Dotted Travel Route, Location Pins & Minimal Car Illustration */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '15px',
+          right: '8%',
+          width: '240px',
+          height: '150px',
+          opacity: 0.22,
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}
+        className="hero-subtle-route-bg"
+      >
+        <svg width="100%" height="100%" viewBox="0 0 240 150" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* Dotted Route Curve */}
+          <path
+            d="M 15 125 Q 90 125 125 70 T 225 25"
+            stroke="#E6A700"
+            strokeWidth="2.5"
+            strokeDasharray="5 5"
+            strokeLinecap="round"
+          />
+          
+          {/* Departure Location Pin */}
+          <g transform="translate(10, 112)">
+            <circle cx="10" cy="10" r="9" fill="#FFF4CC" stroke="#E6A700" strokeWidth="2" />
+            <circle cx="10" cy="10" r="3.5" fill="#E6A700" />
+          </g>
+          
+          {/* En-route Minimal Car Icon */}
+          <g transform="translate(112, 52) rotate(-22)">
+            <rect x="0" y="0" width="22" height="11" rx="3.5" fill="#E6A700" />
+            <circle cx="5" cy="11" r="2.5" fill="#111827" />
+            <circle cx="17" cy="11" r="2.5" fill="#111827" />
+            <rect x="4" y="2" width="14" height="3.5" rx="1" fill="#FFFFFF" fillOpacity="0.85" />
+          </g>
+
+          {/* Destination Location Pin */}
+          <g transform="translate(215, 12)">
+            <circle cx="10" cy="10" r="9" fill="#E6A700" />
+            <circle cx="10" cy="10" r="3.5" fill="#FFFFFF" />
+          </g>
+        </svg>
+      </div>
+
       <div className="container" style={{ position: 'relative', zIndex: 2 }}>
 
         <div className="hero-grid" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '2rem', alignItems: 'center' }}>
@@ -107,7 +154,7 @@ export default function Hero({ onSearch, onOfferRideClick }) {
           <div style={{ maxWidth: '420px', margin: '0 auto', width: '100%' }}>
 
             {/* Main Headline */}
-            <div style={{ textAlign: 'left', marginBottom: '0.65rem' }}>
+            <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
               <h1
                 style={{
                   fontFamily: 'var(--font-heading)',
@@ -116,7 +163,7 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                   lineHeight: '1.15',
                   letterSpacing: '-0.03em',
                   color: '#111827',
-                  marginBottom: '0.15rem',
+                  marginBottom: '0.25rem',
                 }}
               >
                 Your Journey Is Better{' '}
@@ -133,14 +180,14 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                   color: '#6B7280',
                   lineHeight: '1.3',
                   fontWeight: '400',
-                  marginBottom: '0.55rem',
+                  marginBottom: '1rem',
                 }}
               >
                 Find trusted people travelling in your direction.
               </p>
 
               {/* Top Buttons: Find a Ride & Offer a Ride */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', marginBottom: '0' }}>
                 <button
                   type="button"
                   onClick={handleSearchSubmit}
@@ -183,6 +230,36 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                 >
                   Offer a Ride →
                 </button>
+              </div>
+
+              {/* Option 2: Trust Indicators Row */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexWrap: 'wrap',
+                  gap: '0.35rem 0.65rem',
+                  marginTop: '0.65rem',
+                  fontSize: '0.725rem',
+                  fontWeight: '700',
+                  color: '#4B5563',
+                }}
+              >
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <ShieldCheck size={13} style={{ color: '#E6A700' }} />
+                  Verified Users
+                </span>
+                <span style={{ color: '#CBD5E1' }}>•</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <LockIcon size={13} style={{ color: '#E6A700' }} />
+                  Safe Rides
+                </span>
+                <span style={{ color: '#CBD5E1' }}>•</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <Users size={13} style={{ color: '#E6A700' }} />
+                  Trusted Community
+                </span>
               </div>
             </div>
 

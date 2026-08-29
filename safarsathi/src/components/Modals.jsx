@@ -7,7 +7,7 @@ import {
   ShieldCheck,
   Star,
   CheckCircle2,
-  Lock,
+  Lock as LockIcon,
   Phone,
   Car,
   Navigation,
@@ -213,7 +213,7 @@ export function JourneyDetailModal({ journey, onClose, onBookingConfirmed }) {
 
             {/* Zero-Prepay Guarantee Banner */}
             <div style={{ padding: '0.85rem 1rem', backgroundColor: '#F9FAFB', borderRadius: '14px', border: '1px solid #E5E7EB', fontSize: '0.8rem', color: '#6B7280', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-              <Lock size={16} style={{ color: '#E6A700', flexShrink: 0 }} />
+              <LockIcon size={16} style={{ color: '#E6A700', flexShrink: 0 }} />
               <span>Zero Prepay Required! Pay directly to driver host after verifying vehicle & pickup OTP.</span>
             </div>
 

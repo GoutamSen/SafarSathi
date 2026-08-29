@@ -7,7 +7,7 @@ import {
   ShieldCheck,
   Star,
   CheckCircle2,
-  Lock,
+  Lock as LockIcon,
   Phone,
   Car,
   Navigation,

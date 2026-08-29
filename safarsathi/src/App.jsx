@@ -206,15 +206,7 @@ export default function App() {
       className={isHovered ? 'custom-cursor-hover' : ''}
       style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-slate)' }}
     >
-      {/* Custom Mouse Cursor Elements */}
-      <div
-        className="custom-cursor-dot"
-        style={{ left: `${cursorPos.x}px`, top: `${cursorPos.y}px` }}
-      />
-      <div
-        className="custom-cursor-ring"
-        style={{ left: `${cursorPos.x}px`, top: `${cursorPos.y}px` }}
-      />
+
       
       {/* Interactive Toast Notification */}
       {toastMessage && (

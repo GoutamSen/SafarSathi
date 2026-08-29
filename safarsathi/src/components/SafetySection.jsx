@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Phone, CheckCircle2, Lock, UserCheck, AlertTriangle, ArrowRight, Eye, Check } from 'lucide-react';
+import { ShieldCheck, Phone, CheckCircle2, Lock as LockIcon, UserCheck, AlertTriangle, ArrowRight, Eye, Check } from 'lucide-react';
 
 export default function SafetySection({ onOpenJoinModal }) {
   const [activeSafetyTab, setActiveSafetyTab] = useState('verification');
@@ -175,8 +175,8 @@ export default function SafetySection({ onOpenJoinModal }) {
                 textAlign: 'left',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', color: '#D97706' }}>
-                <Lock size={16} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', color: '#C98F00' }}>
+                <LockIcon size={16} />
                 <span>100% Data Encryption</span>
               </div>
               <span style={{ fontSize: '0.8rem', color: '#6B7280', fontWeight: '400' }}>
