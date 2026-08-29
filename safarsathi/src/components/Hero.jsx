@@ -154,7 +154,7 @@ export default function Hero({ onSearch, onOfferRideClick }) {
           <div style={{ maxWidth: '420px', margin: '0 auto', width: '100%' }}>
 
             {/* Main Headline */}
-            <div style={{ textAlign: 'left', marginBottom: '1.5rem' }}>
+            <div style={{ textAlign: 'left', marginBottom: '1.35rem' }}>
               <h1
                 style={{
                   fontFamily: 'var(--font-heading)',
@@ -180,14 +180,14 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                   color: '#6B7280',
                   lineHeight: '1.3',
                   fontWeight: '400',
-                  marginBottom: '1rem',
+                  marginBottom: '0.85rem',
                 }}
               >
                 Find trusted people travelling in your direction.
               </p>
 
               {/* Top Buttons: Find a Ride & Offer a Ride */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', marginBottom: '0' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', marginBottom: '0' }}>
                 <button
                   type="button"
                   onClick={handleSearchSubmit}
@@ -240,7 +240,7 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                   justifyContent: 'center',
                   flexWrap: 'wrap',
                   gap: '0.35rem 0.65rem',
-                  marginTop: '0.65rem',
+                  marginTop: '0.85rem',
                   fontSize: '0.725rem',
                   fontWeight: '700',
                   color: '#4B5563',
