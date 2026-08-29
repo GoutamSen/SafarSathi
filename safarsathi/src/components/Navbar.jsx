@@ -51,30 +51,30 @@ export default function Navbar({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          height: '68px',
+          height: '56px',
         }}
       >
-        {/* Brand Logo - Refined Warm Yellow */}
+        {/* Brand Logo - Exact Match to Screenshot */}
         <a
           href="#hero"
           onClick={() => setActiveTab('Home')}
-          style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', textDecoration: 'none', flexShrink: 0 }}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none', flexShrink: 0 }}
         >
-          {/* Refined Warm Yellow Badge Icon */}
+          {/* Refined Yellow Badge Icon */}
           <div
             style={{
-              width: '36px',
-              height: '36px',
-              borderRadius: '10px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '9px',
               backgroundColor: '#E6A700',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 3px 10px rgba(230, 167, 0, 0.3)',
+              boxShadow: '0 2px 8px rgba(230, 167, 0, 0.3)',
               flexShrink: 0,
             }}
           >
-            <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="19" height="19" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path
                 d="M8 8C8 8 11 5 17 5C23 5 24 9.5 24 12C24 16.5 10 16 10 20.5C10 23.5 12 27 20 27C25 27 26.5 24.5 26.5 24.5"
                 stroke="white"
@@ -92,7 +92,7 @@ export default function Navbar({
             <span
               style={{
                 fontFamily: 'var(--font-heading)',
-                fontSize: '1.35rem',
+                fontSize: '1.2rem',
                 fontWeight: '800',
                 color: '#111827',
                 letterSpacing: '-0.03em',
@@ -103,7 +103,7 @@ export default function Navbar({
             <span
               style={{
                 fontFamily: 'var(--font-heading)',
-                fontSize: '1.35rem',
+                fontSize: '1.2rem',
                 fontWeight: '800',
                 color: '#E6A700',
                 lineHeight: 1,
@@ -163,8 +163,8 @@ export default function Navbar({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '40px',
-                height: '40px',
+                width: '36px',
+                height: '36px',
                 borderRadius: '50%',
                 backgroundColor: '#FFF4CC',
                 border: '1px solid rgba(230, 167, 0, 0.3)',
@@ -173,7 +173,7 @@ export default function Navbar({
                 transition: 'all 0.2s ease',
               }}
             >
-              <Bell size={19} />
+              <Bell size={17} />
               <span
                 style={{
                   position: 'absolute',
@@ -183,8 +183,8 @@ export default function Navbar({
                   color: '#111827',
                   fontSize: '0.7rem',
                   fontWeight: '800',
-                  width: '18px',
-                  height: '18px',
+                  width: '16px',
+                  height: '16px',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
@@ -200,9 +200,9 @@ export default function Navbar({
             type="button"
             onClick={onOpenLoginModal}
             className="btn btn-secondary"
-            style={{ padding: '0.6rem 1.15rem', fontSize: '0.875rem' }}
+            style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
           >
-            <User size={16} />
+            <User size={15} />
             Log In
           </button>
 
@@ -210,10 +210,10 @@ export default function Navbar({
             type="button"
             className="btn btn-primary btn-shine"
             onClick={onOpenJoinModal}
-            style={{ padding: '0.65rem 1.35rem', fontSize: '0.875rem' }}
+            style={{ padding: '0.55rem 1.15rem', fontSize: '0.85rem' }}
           >
             Join SafarSaathi
-            <ArrowRight size={16} />
+            <ArrowRight size={15} />
           </button>
         </div>
 
@@ -225,9 +225,9 @@ export default function Navbar({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            width: '40px',
-            height: '40px',
-            borderRadius: '10px',
+            width: '36px',
+            height: '36px',
+            borderRadius: '9px',
             border: 'none',
             backgroundColor: 'transparent',
             color: '#111827',
@@ -236,7 +236,7 @@ export default function Navbar({
           }}
           className="mobile-toggle"
         >
-          {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
+          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
@@ -247,14 +247,14 @@ export default function Navbar({
           style={{
             backgroundColor: '#FFFFFF',
             borderBottom: '1px solid #E5E7EB',
-            padding: '1.25rem',
-            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.08)',
+            padding: '1rem',
+            boxShadow: '0 15px 30px rgba(0, 0, 0, 0.08)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1rem',
+            gap: '0.85rem',
           }}
         >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
             {navLinks.map((link) => (
               <a
                 key={link.label}
@@ -268,12 +268,11 @@ export default function Navbar({
                   }
                 }}
                 style={{
-                  fontSize: '1rem',
+                  fontSize: '0.95rem',
                   fontWeight: '600',
                   color: '#111827',
                   textDecoration: 'none',
-                  padding: '0.75rem 1rem',
-                  minHeight: '44px',
+                  padding: '0.6rem 0.85rem',
                   borderRadius: 'var(--radius-md)',
                   display: 'flex',
                   alignItems: 'center',
@@ -297,8 +296,8 @@ export default function Navbar({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: '0.75rem',
-              paddingTop: '0.75rem',
+              gap: '0.6rem',
+              paddingTop: '0.6rem',
               borderTop: '1px solid #E5E7EB',
             }}
           >
@@ -308,9 +307,9 @@ export default function Navbar({
                 setMobileMenuOpen(false);
                 onOpenLoginModal();
               }}
-              style={{ width: '100%', minHeight: '46px', justifyContent: 'center' }}
+              style={{ width: '100%', minHeight: '42px', justifyContent: 'center' }}
             >
-              <User size={18} />
+              <User size={16} />
               Log In
             </button>
 
@@ -320,10 +319,10 @@ export default function Navbar({
                 setMobileMenuOpen(false);
                 onOpenJoinModal();
               }}
-              style={{ width: '100%', minHeight: '46px', justifyContent: 'center' }}
+              style={{ width: '100%', minHeight: '42px', justifyContent: 'center' }}
             >
               Join SafarSaathi
-              <ArrowRight size={18} />
+              <ArrowRight size={16} />
             </button>
           </div>
         </div>

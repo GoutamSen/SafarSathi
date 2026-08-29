@@ -1,22 +1,25 @@
 import React from 'react';
+import { ShieldCheck, Heart, ArrowUp, Mail, Phone, MapPin } from 'lucide-react';
 
-export default function Footer({ onAdminClick, onDriverClick, onPassengerClick }) {
+export default function Footer() {
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
-    <footer style={{ backgroundColor: '#111827', color: '#9CA3AF', paddingTop: '4rem', paddingBottom: '2rem' }}>
+    <footer style={{ backgroundColor: '#111827', color: '#F9FAFB', paddingTop: '4.5rem', paddingBottom: '2.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
       <div className="container">
-        
-        {/* Main 4-Column Footer Grid */}
         <div
           style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '2.5rem',
-            marginBottom: '3.5rem',
+            gap: '3rem',
+            marginBottom: '4rem',
           }}
         >
-          {/* Brand Info */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1rem' }}>
+          {/* Brand Column */}
+          <div style={{ maxWidth: '340px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '1.25rem' }}>
               <div
                 style={{
                   width: '36px',
@@ -26,6 +29,7 @@ export default function Footer({ onAdminClick, onDriverClick, onPassengerClick }
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  boxShadow: '0 2px 10px rgba(230, 167, 0, 0.3)',
                 }}
               >
                 <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -42,71 +46,69 @@ export default function Footer({ onAdminClick, onDriverClick, onPassengerClick }
               </div>
 
               <div style={{ display: 'flex', alignItems: 'baseline' }}>
-                <span style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.03em' }}>
+                <span style={{ fontFamily: 'var(--font-heading)', fontSize: '1.45rem', fontWeight: '800', color: '#FFFFFF', letterSpacing: '-0.03em' }}>
                   SafarSaathi
                 </span>
-                <span style={{ fontFamily: 'var(--font-heading)', fontSize: '1.35rem', fontWeight: '800', color: '#E6A700', lineHeight: 1 }}>
+                <span style={{ fontFamily: 'var(--font-heading)', fontSize: '1.45rem', fontWeight: '800', color: '#E6A700' }}>
                   .
                 </span>
               </div>
             </div>
 
-            <p style={{ fontSize: '0.9rem', color: '#9CA3AF', lineHeight: '1.6', marginBottom: '1.25rem' }}>
-              India's premier verified carpooling & route-sharing community connecting co-travellers on regional & intercity routes.
+            <p style={{ fontSize: '0.925rem', color: '#9CA3AF', lineHeight: '1.6', marginBottom: '1.5rem' }}>
+              India's premier verified intercity ride-sharing community connecting Indore, Bhopal, Khargone & MP corridors.
             </p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#E6A700', fontWeight: '700' }}>
+              <ShieldCheck size={16} />
+              <span>100% Aadhaar & DL Verified Network</span>
+            </div>
           </div>
 
           {/* Quick Links */}
           <div>
             <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#FFFFFF', marginBottom: '1.25rem', letterSpacing: '0.02em' }}>
-              Platform Navigation
+              POPULAR CORRIDORS
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.9rem' }}>
-              <a href="#hero" style={{ color: '#9CA3AF', textDecoration: 'none' }}>Find a Ride</a>
-              <a href="#live-journeys" style={{ color: '#9CA3AF', textDecoration: 'none' }}>Live Journeys</a>
-              <a href="#how-it-works" style={{ color: '#9CA3AF', textDecoration: 'none' }}>How It Works</a>
-              <a href="#why-us" style={{ color: '#9CA3AF', textDecoration: 'none' }}>Why SafarSaathi</a>
-              <a href="#safety" style={{ color: '#9CA3AF', textDecoration: 'none' }}>Safety & Trust</a>
-            </div>
+            <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.9rem', color: '#9CA3AF' }}>
+              <li><a href="#search-card" style={{ color: 'inherit', textDecoration: 'none' }}>Indore ➔ Khargone Rides</a></li>
+              <li><a href="#search-card" style={{ color: 'inherit', textDecoration: 'none' }}>Bhopal ➔ Indore Express</a></li>
+              <li><a href="#search-card" style={{ color: 'inherit', textDecoration: 'none' }}>Ujjain ➔ Indore Daily Pool</a></li>
+              <li><a href="#search-card" style={{ color: 'inherit', textDecoration: 'none' }}>Pithampur ➔ Dhamnod Route</a></li>
+            </ul>
           </div>
 
-          {/* User Portals */}
+          {/* Platform Links */}
           <div>
             <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#FFFFFF', marginBottom: '1.25rem', letterSpacing: '0.02em' }}>
-              User & Admin Portals
+              SAFETY & TRUST
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.9rem' }}>
-              <button
-                onClick={onPassengerClick}
-                style={{ background: 'none', border: 'none', color: '#9CA3AF', textAlign: 'left', cursor: 'pointer', fontSize: '0.9rem', padding: 0 }}
-              >
-                👤 Passenger Portal
-              </button>
-              <button
-                onClick={onDriverClick}
-                style={{ background: 'none', border: 'none', color: '#9CA3AF', textAlign: 'left', cursor: 'pointer', fontSize: '0.9rem', padding: 0 }}
-              >
-                🚗 Driver & Rider Portal
-              </button>
-              <button
-                onClick={onAdminClick}
-                style={{ background: 'none', border: 'none', color: '#E6A700', textAlign: 'left', cursor: 'pointer', fontSize: '0.9rem', padding: 0, fontWeight: '700' }}
-              >
-                🛡️ Platform Admin Dashboard
-              </button>
-            </div>
+            <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem', fontSize: '0.9rem', color: '#9CA3AF' }}>
+              <li><a href="#safety" style={{ color: 'inherit', textDecoration: 'none' }}>Aadhaar Verification</a></li>
+              <li><a href="#safety" style={{ color: 'inherit', textDecoration: 'none' }}>Private Phone Relay</a></li>
+              <li><a href="#safety" style={{ color: 'inherit', textDecoration: 'none' }}>24x7 SOS Support</a></li>
+              <li><a href="#how-it-works" style={{ color: 'inherit', textDecoration: 'none' }}>Zero-Prepay Escrow Guarantee</a></li>
+            </ul>
           </div>
 
-          {/* Legal & Contact */}
+          {/* Contact & Support */}
           <div>
             <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#FFFFFF', marginBottom: '1.25rem', letterSpacing: '0.02em' }}>
-              Trust & Support
+              HELP & SUPPORT
             </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.9rem' }}>
-              <span>📞 24x7 Safety Relay: +91 1800-SAFAR</span>
-              <span>✉️ support@safarsaathi.in</span>
-              <span>📍 MP & Regional Hubs</span>
-              <span>🔒 Zero Pre-Payment Guarantee</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', fontSize: '0.9rem', color: '#9CA3AF' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <Mail size={16} style={{ color: '#E6A700' }} />
+                <span>support@safarsaathi.in</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <Phone size={16} style={{ color: '#E6A700' }} />
+                <span>+91 98260 12345 (24x7 Helpline)</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <MapPin size={16} style={{ color: '#E6A700' }} />
+                <span>Indore, Madhya Pradesh, India</span>
+              </div>
             </div>
           </div>
         </div>
@@ -115,7 +117,7 @@ export default function Footer({ onAdminClick, onDriverClick, onPassengerClick }
         <div
           style={{
             paddingTop: '2rem',
-            borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+            borderTop: '1px solid rgba(255, 255, 255, 0.08)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -126,16 +128,29 @@ export default function Footer({ onAdminClick, onDriverClick, onPassengerClick }
           }}
         >
           <div>
-            © {new Date().getFullYear()} SafarSaathi Technologies. All rights reserved.
+            © {new Date().getFullYear()} SafarSaathi Technologies Pvt. Ltd. All rights reserved.
           </div>
 
-          <div style={{ display: 'flex', gap: '1.5rem' }}>
-            <span style={{ cursor: 'pointer' }}>Privacy Policy</span>
-            <span style={{ cursor: 'pointer' }}>Terms of Service</span>
-            <span style={{ cursor: 'pointer' }}>Safety Guidelines</span>
-          </div>
+          <button
+            onClick={scrollToTop}
+            style={{
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              color: '#FFFFFF',
+              borderRadius: 'var(--radius-md)',
+              padding: '0.5rem 1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              cursor: 'pointer',
+              fontSize: '0.85rem',
+              fontWeight: '600',
+            }}
+          >
+            Back to Top
+            <ArrowUp size={15} />
+          </button>
         </div>
-
       </div>
     </footer>
   );

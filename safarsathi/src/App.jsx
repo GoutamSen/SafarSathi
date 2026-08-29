@@ -23,6 +23,7 @@ export default function App() {
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
   const [isHovered, setIsHovered] = useState(false);
   const [publishedJourneys, setPublishedJourneys] = useState([]);
+
   const [confirmedBookings, setConfirmedBookings] = useState([
     {
       id: 'cb-sample-1',
@@ -50,12 +51,12 @@ export default function App() {
   const handlePublishJourney = (newJourney) => {
     setPublishedJourneys((prev) => [newJourney, ...prev]);
     showToast(`🎉 Journey Published! Your route "${newJourney.routeFrom} → ${newJourney.routeTo}" is now live.`);
-    const liveSec = document.getElementById('live-journeys');
-    if (liveSec) {
-      setTimeout(() => {
+    setTimeout(() => {
+      const liveSec = document.getElementById('live-journeys');
+      if (liveSec) {
         liveSec.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
-    }
+      }
+    }, 100);
   };
 
   React.useEffect(() => {
@@ -86,10 +87,12 @@ export default function App() {
 
   const handleSearchSubmit = (searchParams) => {
     showToast(`🔍 Searching route-matched journeys from ${searchParams.from} to ${searchParams.to} for ${searchParams.passengers} passenger(s)...`);
-    const liveSec = document.getElementById('live-journeys');
-    if (liveSec) {
-      liveSec.scrollIntoView({ behavior: 'smooth' });
-    }
+    setTimeout(() => {
+      const liveSec = document.getElementById('live-journeys');
+      if (liveSec) {
+        liveSec.scrollIntoView({ behavior: 'smooth' });
+      }
+    }, 100);
   };
 
   const handleOpenJoin = () => {
@@ -102,7 +105,7 @@ export default function App() {
     setIsJoinModalOpen(true);
   };
 
-  const [currentUser, setCurrentUser] = useState(null); // { name: 'Rahul Sharma', phone: '9826012345' }
+  const [currentUser, setCurrentUser] = useState(null);
   const [pendingActionAfterAuth, setPendingActionAfterAuth] = useState(null);
 
   const handleOpenOffer = () => {
@@ -123,7 +126,7 @@ export default function App() {
 
     if (pendingActionAfterAuth === 'offer_ride') {
       setPendingActionAfterAuth(null);
-      setIsOfferModalOpen(true); // Automatically opens Offer Ride Booking Page!
+      setIsOfferModalOpen(true);
     }
   };
 
@@ -217,10 +220,10 @@ export default function App() {
       {toastMessage && (
         <div style={{
           position: 'fixed',
-          top: '90px',
+          top: '80px',
           right: '20px',
           zIndex: 99,
-          backgroundColor: '#0F172A',
+          backgroundColor: '#111827',
           color: '#FFFFFF',
           padding: '0.85rem 1.25rem',
           borderRadius: 'var(--radius-md)',
@@ -246,32 +249,32 @@ export default function App() {
         onOpenDriverNotification={handleOpenDriverNotification}
       />
 
-      {/* Main Landing Sections */}
+      {/* Main Content Flow: Screen 1 = Hero Viewport, Scroll down = All Remaining Sections */}
       <main style={{ flex: 1 }}>
         
         {/* DRIVER INCOMING REQUEST NOTIFICATION ALERT BANNER */}
         {pendingDriverNotification && (
-          <section className="container" style={{ marginTop: '1.5rem', marginBottom: '1rem' }}>
+          <section className="container" style={{ marginTop: '1rem', marginBottom: '0.5rem' }}>
             <div style={{
-              backgroundColor: '#0F172A',
-              border: '2px solid #38BDF8',
+              backgroundColor: '#111827',
+              border: '2px solid #FFB800',
               borderRadius: 'var(--radius-xl)',
-              padding: '1.35rem 1.5rem',
+              padding: '1.25rem 1.5rem',
               color: '#FFFFFF',
-              boxShadow: '0 10px 30px rgba(56, 189, 248, 0.25)',
+              boxShadow: '0 10px 30px rgba(255, 184, 0, 0.25)',
               animation: 'fadeIn 0.3s ease-out',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
-                  <div className="badge-pill" style={{ backgroundColor: 'rgba(56, 189, 248, 0.2)', color: '#38BDF8', fontSize: '0.8rem', marginBottom: '0.5rem', display: 'inline-flex' }}>
-                    <span className="pulse-indicator" style={{ backgroundColor: '#38BDF8' }} />
+                  <div className="badge-pill" style={{ backgroundColor: 'rgba(255, 184, 0, 0.2)', color: '#FFB800', fontSize: '0.8rem', marginBottom: '0.5rem', display: 'inline-flex' }}>
+                    <span className="pulse-indicator" style={{ backgroundColor: '#FFB800' }} />
                     <span>🔔 NEW SEAT REQUEST NOTIFICATION • {pendingDriverNotification.time}</span>
                   </div>
-                  <h4 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#FFFFFF', marginBottom: '0.35rem' }}>
+                  <h4 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#FFFFFF', marginBottom: '0.35rem' }}>
                     Passenger {pendingDriverNotification.passengerName} requested {pendingDriverNotification.requestedSeats} Seat(s)
                   </h4>
-                  <div style={{ fontSize: '0.9rem', color: '#CBD5E1' }}>
-                    Route: <strong>{pendingDriverNotification.routeFrom} ➔ {pendingDriverNotification.routeTo}</strong> • Pickup Point: <strong>{pendingDriverNotification.pickupPoint}</strong> • Fare Total: <strong style={{ color: '#4ADE80' }}>₹{pendingDriverNotification.totalFare}</strong>
+                  <div style={{ fontSize: '0.85rem', color: '#CBD5E1' }}>
+                    Route: <strong>{pendingDriverNotification.routeFrom} ➔ {pendingDriverNotification.routeTo}</strong> • Pickup Point: <strong>{pendingDriverNotification.pickupPoint}</strong> • Fare Total: <strong style={{ color: '#FFB800' }}>₹{pendingDriverNotification.totalFare}</strong>
                   </div>
                 </div>
 
@@ -279,8 +282,8 @@ export default function App() {
                   <button
                     type="button"
                     onClick={handleOpenDriverNotification}
-                    className="btn btn-gradient-green btn-shine"
-                    style={{ padding: '0.85rem 1.35rem', fontSize: '0.95rem', whiteSpace: 'nowrap' }}
+                    className="btn btn-primary btn-shine"
+                    style={{ padding: '0.75rem 1.25rem', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
                   >
                     Review Request & Accept/Decline ➔
                   </button>
@@ -294,7 +297,7 @@ export default function App() {
                       border: '1px solid rgba(255, 255, 255, 0.2)',
                       color: '#94A3B8',
                       borderRadius: 'var(--radius-md)',
-                      padding: '0.75rem',
+                      padding: '0.65rem',
                       cursor: 'pointer',
                       fontSize: '0.85rem',
                       fontWeight: '700',
@@ -308,32 +311,32 @@ export default function App() {
           </section>
         )}
 
-        {/* 1. HERO SECTION */}
+        {/* 1. HERO SECTION (Fills Screen 1 Viewport Exactly) */}
         <Hero
           onSearch={handleSearchSubmit}
           onOfferRideClick={handleOpenOffer}
         />
 
-        {/* 2. TRUST / STATS SECTION */}
+        {/* 2. TRUST / STATS SECTION (Visible on Scroll) */}
         <TrustStats />
 
         {/* 2.5 MY CONFIRMED BOOKINGS & ACTIVE TRIPS */}
         {confirmedBookings.length > 0 && (
           <section className="container" style={{ marginTop: '2.5rem', marginBottom: '1.5rem' }}>
             <div style={{
-              backgroundColor: '#0F172A',
-              border: '2px solid #10B981',
-              borderRadius: 'var(--radius-xl)',
+              backgroundColor: '#FFF8E6',
+              border: '2px solid #FFB800',
+              borderRadius: '20px',
               padding: '1.5rem',
-              color: '#FFFFFF',
-              boxShadow: '0 10px 30px rgba(16, 185, 129, 0.25)',
+              color: '#111827',
+              boxShadow: '0 10px 30px rgba(255, 184, 0, 0.2)',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
                 <div className="badge-pill badge-green" style={{ fontSize: '0.8rem' }}>
                   <span className="pulse-indicator" />
                   <span>🎟️ MY CONFIRMED BOOKINGS & PASSES ({confirmedBookings.length})</span>
                 </div>
-                <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>Payment Due After Pickup Verification</span>
+                <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>Payment Due After Pickup Verification</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -346,31 +349,31 @@ export default function App() {
                       alignItems: 'center',
                       justifyContent: 'space-between',
                       gap: '1rem',
-                      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                      backgroundColor: '#FFFFFF',
                       padding: '1.15rem 1.25rem',
-                      borderRadius: 'var(--radius-lg)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      borderRadius: '16px',
+                      border: '1px solid #E5E7EB',
                     }}
                   >
                     <div>
-                      <div style={{ fontSize: '0.8rem', color: '#4ADE80', fontWeight: '700', marginBottom: '0.2rem' }}>
+                      <div style={{ fontSize: '0.8rem', color: '#D97706', fontWeight: '700', marginBottom: '0.2rem' }}>
                         ✅ CONFIRMED BOOKING PASS • {booking.departureTime || 'Today'}
                       </div>
-                      <h4 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#FFFFFF', marginBottom: '0.4rem' }}>
+                      <h4 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#111827', marginBottom: '0.4rem' }}>
                         {booking.routeFrom} ➔ {booking.routeTo}
                       </h4>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.85rem', color: '#CBD5E1' }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.85rem', color: '#6B7280' }}>
                         <span>Driver: <strong>{booking.driverName}</strong> (Govt ID Verified)</span>
                         <span>Vehicle: <strong>{booking.vehicleModel}</strong></span>
                         <span>Pickup Point: <strong>{booking.pickupPoint}</strong></span>
-                        <span>Fare: <strong style={{ color: '#38BDF8' }}>₹{booking.totalFare}</strong></span>
+                        <span>Fare: <strong style={{ color: '#D97706' }}>₹{booking.totalFare}</strong></span>
                       </div>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setSelectedJourney(booking)}
-                      className="btn btn-gradient-green btn-shine"
+                      className="btn btn-primary btn-shine"
                       style={{ padding: '0.75rem 1.25rem', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
                     >
                       Open Ticket & Pickup OTP ➔
@@ -402,7 +405,7 @@ export default function App() {
           onOpenJoinModal={handleOpenJoin}
         />
 
-        {/* 7. DUAL PERSONA (FOR DRIVERS & FOR PASSENGERS) */}
+        {/* 7. DUAL PERSONA */}
         <DualPersona
           onOfferClick={handleOpenOffer}
           onFindClick={handleFindClick}

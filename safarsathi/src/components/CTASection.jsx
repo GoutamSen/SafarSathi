@@ -1,99 +1,111 @@
 import React from 'react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, ShieldCheck, Zap } from 'lucide-react';
 
-export default function CTASection({ onJoinClick, onOfferClick }) {
+export default function CTASection({ onFindClick, onOfferClick }) {
   return (
-    <section
-      style={{
-        padding: '5.5rem 0',
-        background: 'linear-gradient(135deg, #E6A700 0%, #C98F00 100%)',
-        color: '#111827',
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      <div className="container" style={{ position: 'relative', zIndex: 2 }}>
+    <section style={{ padding: '5.5rem 0', backgroundColor: '#FFFFFF' }}>
+      <div className="container">
         <div
           style={{
-            maxWidth: '780px',
-            margin: '0 auto',
+            background: 'linear-gradient(135deg, #E6A700 0%, #C98F00 100%)',
+            borderRadius: '32px',
+            padding: '4rem 2rem',
             textAlign: 'center',
+            color: '#111827',
+            position: 'relative',
+            overflow: 'hidden',
+            boxShadow: '0 20px 45px rgba(230, 167, 0, 0.3)',
           }}
         >
-          <div
-            className="badge-pill"
-            style={{
-              backgroundColor: 'rgba(17, 24, 39, 0.12)',
-              color: '#111827',
-              marginBottom: '1.25rem',
-              display: 'inline-flex',
-            }}
-          >
-            <Sparkles size={16} />
-            <span>Join 10,000+ Co-Travellers Today</span>
-          </div>
-
-          <h2
-            style={{
-              fontFamily: 'var(--font-heading)',
-              fontSize: 'clamp(2.25rem, 4vw, 3.25rem)',
-              fontWeight: '800',
-              lineHeight: '1.2',
-              letterSpacing: '-0.03em',
-              marginBottom: '1rem',
-              color: '#111827',
-            }}
-          >
-            Your Journey Is Better Together.
-          </h2>
-
-          <p
-            style={{
-              fontSize: '1.15rem',
-              color: '#1F2937',
-              marginBottom: '2.5rem',
-              maxWidth: '620px',
-              margin: '0 auto 2.5rem auto',
-              lineHeight: '1.6',
-            }}
-          >
-            Start sharing seats, saving fuel costs, and meeting verified co-travellers heading in your direction.
-          </p>
-
+          {/* Subtle Decorative Circle Overlay */}
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '1rem',
-              flexWrap: 'wrap',
+              position: 'absolute',
+              top: '-20%',
+              right: '-10%',
+              width: '400px',
+              height: '400px',
+              borderRadius: '50%',
+              backgroundColor: 'rgba(255, 255, 255, 0.15)',
+              pointerEvents: 'none',
             }}
-          >
-            <button
-              onClick={onJoinClick}
-              className="btn btn-lg"
+          />
+
+          <div style={{ maxWidth: '720px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
+            <div
               style={{
-                backgroundColor: '#111827',
-                color: '#FFFFFF',
-                padding: '0.9rem 2.25rem',
-                border: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                backgroundColor: 'rgba(255, 255, 255, 0.3)',
+                padding: '0.4rem 1rem',
+                borderRadius: 'var(--radius-full)',
+                fontSize: '0.85rem',
+                fontWeight: '800',
+                marginBottom: '1.25rem',
               }}
             >
-              Join SafarSaathi Free
-              <ArrowRight size={18} />
-            </button>
+              <Zap size={16} />
+              <span>START SAVING TODAY</span>
+            </div>
 
-            <button
-              onClick={onOfferClick}
-              className="btn btn-secondary btn-lg"
+            <h2
               style={{
-                backgroundColor: '#FFFFFF',
+                fontSize: 'clamp(2.2rem, 4vw, 3.25rem)',
+                fontWeight: '800',
+                marginBottom: '1rem',
                 color: '#111827',
-                border: '1.5px solid #111827',
+                lineHeight: 1.15,
+                letterSpacing: '-0.03em',
               }}
             >
-              Offer Seats as Driver
-            </button>
+              Ready To Upgrade Your Daily Intercity Travels?
+            </h2>
+
+            <p
+              style={{
+                fontSize: '1.15rem',
+                color: '#1F2937',
+                marginBottom: '2.5rem',
+                fontWeight: '500',
+                lineHeight: 1.6,
+              }}
+            >
+              Join 10,000+ verified commuters sharing rides across Indore, Bhopal, Khargone & MP corridors.
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={onFindClick}
+                className="btn btn-lg"
+                style={{
+                  backgroundColor: '#111827',
+                  color: '#FFFFFF',
+                  padding: '1rem 2.25rem',
+                  fontSize: '1.05rem',
+                  borderRadius: 'var(--radius-xl)',
+                  boxShadow: '0 8px 25px rgba(0, 0, 0, 0.25)',
+                }}
+              >
+                Find a Ride Now
+                <ArrowRight size={18} />
+              </button>
+
+              <button
+                onClick={onOfferClick}
+                className="btn btn-lg"
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  color: '#111827',
+                  border: '1.5px solid rgba(17, 24, 39, 0.15)',
+                  padding: '1rem 2.25rem',
+                  fontSize: '1.05rem',
+                  borderRadius: 'var(--radius-xl)',
+                }}
+              >
+                Offer a Ride & Earn
+              </button>
+            </div>
           </div>
         </div>
       </div>

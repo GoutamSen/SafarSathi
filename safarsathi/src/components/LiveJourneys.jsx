@@ -235,7 +235,7 @@ export default function LiveJourneys({ publishedJourneys = [], onSelectJourney, 
                   gap: '0.65rem',
                   fontSize: '0.875rem',
                   marginBottom: '1.25rem',
-                  border: '1px solid rgba(230, 167, 0, 0.2)',
+                  border: '1px solid rgba(230, 167, 0, 0.25)',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ color: '#6B7280', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
