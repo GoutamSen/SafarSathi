@@ -8,7 +8,8 @@ import {
   ShieldCheck,
   Star,
   Layers,
-  Car
+  Car,
+  Info
 } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -29,8 +30,9 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
   if (!corridor) return null;
 
   const [activeStatus, setActiveStatus] = useState('live'); // 'live' | 'upcoming' | 'completed'
-  const [selectedRideId, setSelectedRideId] = useState(null); // Default null: No card open until marker clicked
+  const [selectedRideId, setSelectedRideId] = useState(null); // Default null
   const [mapStyle, setMapStyle] = useState('google-roadmap'); // 'google-roadmap' | 'google-satellite'
+  const [showLegend, setShowLegend] = useState(true);
 
   // Highway Route Corridor Coordinates (Indore -> Khargone SH-27)
   const routePolyline = [
@@ -175,7 +177,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     ? currentRidesList.find((r) => r.id === selectedRideId)
     : null;
 
-  // Minimalist Pure Colored Marker Pins
+  // Distinct Live Vehicle Pin Marker (Car Icon + Pulsing Ring + Subtitle)
   const createCustomMarkerIcon = (ride, isSelected, status) => {
     const color =
       status === 'live'
@@ -184,72 +186,68 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
         ? '#E6A700'
         : '#64748B';
 
-    const html = `
-      <div style="
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transform: translate(-50%, -50%);
-        cursor: pointer;
-        z-index: ${isSelected ? 1000 : 100};
-      ">
-        <div style="
-          width: ${isSelected ? '20px' : '16px'};
-          height: ${isSelected ? '20px' : '16px'};
-          border-radius: 50%;
-          background-color: ${color};
-          border: ${isSelected ? '3px solid #FFFFFF' : '2.5px solid #FFFFFF'};
-          box-shadow: 0 0 ${isSelected ? '16px' : '8px'} ${color};
-          transition: all 0.2s ease;
-        "></div>
-      </div>
-    `;
+    let iconSymbol = '🚗';
+    let statusTag = 'Live Ride';
 
-    return L.divIcon({
-      html,
-      className: 'custom-leaflet-pin',
-      iconSize: [24, 24],
-      iconAnchor: [12, 12],
-    });
-  };
+    if (status === 'upcoming') {
+      iconSymbol = '📅';
+      statusTag = 'Upcoming';
+    } else if (status === 'completed') {
+      iconSymbol = '✓';
+      statusTag = 'Past Trip';
+    }
 
-  const createCityPinIcon = (cityName, isOrigin) => {
-    const color = isOrigin ? '#EA4335' : '#34A853';
     const html = `
       <div style="
         display: flex;
         flex-direction: column;
         align-items: center;
         transform: translate(-50%, -100%);
+        cursor: pointer;
+        z-index: ${isSelected ? 1000 : 100};
       ">
-        <span style="
-          background-color: #1E293B;
+        <!-- Vehicle Circle Badge -->
+        <div style="
+          width: ${isSelected ? '32px' : '28px'};
+          height: ${isSelected ? '32px' : '28px'};
+          border-radius: 50%;
+          background-color: ${color};
           color: #FFFFFF;
-          padding: 2px 6px;
-          border-radius: 6px;
-          font-size: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: ${isSelected ? '15px' : '13px'};
+          border: 3px solid #FFFFFF;
+          box-shadow: 0 0 16px ${color}, 0 0 0 4px rgba(16, 185, 129, 0.25);
+          transition: all 0.25s ease;
+        ">
+          ${iconSymbol}
+        </div>
+
+        <!-- Sleek Subtitle Label -->
+        <div style="
+          background-color: rgba(15, 23, 42, 0.9);
+          color: #FFFFFF;
+          padding: 1px 6px;
+          border-radius: 8px;
+          font-size: 9.5px;
           font-weight: 800;
           font-family: sans-serif;
           white-space: nowrap;
           border: 1px solid ${color};
-        ">
-          ${isOrigin ? '📍' : '🏁'} ${cityName}
-        </span>
-        <div style="
-          width: 12px;
-          height: 12px;
-          border-radius: 50%;
-          background-color: ${color};
-          border: 2px solid #FFFFFF;
           margin-top: 2px;
-        "></div>
+          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        ">
+          🟢 ${statusTag}
+        </div>
       </div>
     `;
+
     return L.divIcon({
       html,
-      className: 'custom-city-pin',
-      iconSize: [60, 30],
-      iconAnchor: [30, 30],
+      className: 'custom-leaflet-pin',
+      iconSize: [60, 44],
+      iconAnchor: [30, 44],
     });
   };
 
@@ -314,9 +312,6 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
               <h3 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, color: '#FFFFFF', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                 {corridor.from} <span style={{ color: '#E6A700' }}>➔</span> {corridor.to}
               </h3>
-              <span style={{ fontSize: '0.65rem', color: '#E6A700', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', lineHeight: 1, marginTop: '2px' }}>
-                POPULAR CORRIDOR
-              </span>
             </div>
           </div>
 
@@ -339,7 +334,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           </button>
         </div>
 
-        {/* 2. ULTRA SLEEK SEGMENTED UNDERLINE TABS STRIP (Live | Upcoming | Past) */}
+        {/* 2. ULTRA SLEEK SEGMENTED UNDERLINE TABS STRIP */}
         <div
           style={{
             backgroundColor: '#1E293B',
@@ -432,7 +427,36 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
         {/* 3. HERO MAP VIEWPORT CANVAS */}
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-          {/* Leaflet Map */}
+          {/* Map Legend Overlay (Top Left) */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '12px',
+              left: '12px',
+              zIndex: 1000,
+              backgroundColor: 'rgba(15, 23, 42, 0.85)',
+              backdropFilter: 'blur(6px)',
+              borderRadius: '20px',
+              padding: '0.3rem 0.65rem',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              fontSize: '0.7rem',
+              fontWeight: '800',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            }}
+          >
+            <span style={{ color: '#34D399', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              🚗 Live Ride
+            </span>
+            <span style={{ color: '#FBBF24', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+              📅 Upcoming
+            </span>
+          </div>
+
+          {/* Leaflet Map Container */}
           <div style={{ flex: 1, width: '100%', height: '100%', position: 'relative', zIndex: 1 }}>
             <MapContainer
               center={mapCenter}
@@ -447,23 +471,15 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                 attribution='&copy; Google Maps'
               />
 
+              {/* Google Maps Bold Dark Red Polyline */}
               <Polyline
                 positions={routePolyline}
-                color={activeStatus === 'live' ? '#10B981' : activeStatus === 'upcoming' ? '#E6A700' : '#4285F4'}
-                weight={5}
-                opacity={0.85}
+                color="#DC2626"
+                weight={7}
+                opacity={0.9}
               />
 
-              <Marker
-                position={[22.7196, 75.8577]}
-                icon={createCityPinIcon('Indore', true)}
-              />
-
-              <Marker
-                position={[21.8247, 75.6102]}
-                icon={createCityPinIcon('Khargone', false)}
-              />
-
+              {/* Vehicle Pins */}
               {currentRidesList.map((ride) => {
                 const isSelected = selectedRide && selectedRide.id === ride.id;
                 return (
@@ -559,7 +575,6 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                     <span style={{ fontSize: '0.675rem', color: '#6B7280', display: 'block', lineHeight: 1 }}>per seat</span>
                   </div>
 
-                  {/* Close Card Button */}
                   <button
                     onClick={() => setSelectedRideId(null)}
                     title="Close Details"
