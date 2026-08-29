@@ -25,6 +25,7 @@ export default function Hero({ onSearch, onOfferRideClick }) {
   const [passengers, setPassengers] = useState(2);
   const [showFromSuggestions, setShowFromSuggestions] = useState(false);
   const [showToSuggestions, setShowToSuggestions] = useState(false);
+  const [activeTab, setActiveTab] = useState('find');
 
   const handleSwapLocations = () => {
     const temp = fromLocation;
@@ -63,7 +64,7 @@ export default function Hero({ onSearch, onOfferRideClick }) {
       id="hero"
       style={{
         position: 'relative',
-        padding: '2rem 0 1.25rem 0',
+        padding: 'calc(2rem - 6px) 0 1.25rem 0',
         backgroundColor: '#FFFFFF',
         overflow: 'hidden',
         minHeight: 'calc(100vh - 56px)',
@@ -123,13 +124,13 @@ export default function Hero({ onSearch, onOfferRideClick }) {
             strokeDasharray="5 5"
             strokeLinecap="round"
           />
-          
+
           {/* Departure Location Pin */}
           <g transform="translate(10, 112)">
             <circle cx="10" cy="10" r="9" fill="#FFF4CC" stroke="#E6A700" strokeWidth="2" />
             <circle cx="10" cy="10" r="3.5" fill="#E6A700" />
           </g>
-          
+
           {/* En-route Minimal Car Icon */}
           <g transform="translate(112, 52) rotate(-22)">
             <rect x="0" y="0" width="22" height="11" rx="3.5" fill="#E6A700" />
@@ -186,49 +187,68 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                 Find trusted people travelling in your direction.
               </p>
 
-              {/* Top Buttons: Find a Ride & Offer a Ride */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem', marginBottom: '0' }}>
+              {/* Dual Role Segmented Tab Switcher */}
+              <div
+                style={{
+                  display: 'flex',
+                  backgroundColor: '#F3F4F6',
+                  borderRadius: '16px',
+                  padding: '4px',
+                  margin: '0.5rem 0 0.75rem 0',
+                  border: '1px solid #E5E7EB',
+                }}
+              >
                 <button
                   type="button"
-                  onClick={handleSearchSubmit}
-                  className="btn btn-primary"
+                  onClick={() => setActiveTab('find')}
                   style={{
-                    width: '100%',
-                    padding: '0.5rem 1rem',
-                    backgroundColor: '#E6A700',
-                    color: '#111827',
-                    fontSize: '0.85rem',
-                    fontWeight: '700',
-                    borderRadius: 'var(--radius-xl)',
-                    boxShadow: '0 3px 12px rgba(230, 167, 0, 0.3)',
+                    flex: 1,
+                    padding: '0.45rem 0.5rem',
+                    borderRadius: '12px',
+                    border: 'none',
+                    backgroundColor: activeTab === 'find' ? '#FFFFFF' : 'transparent',
+                    color: activeTab === 'find' ? '#111827' : '#6B7280',
+                    fontSize: '0.825rem',
+                    fontWeight: '800',
+                    cursor: 'pointer',
+                    boxShadow: activeTab === 'find' ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.4rem',
-                    border: 'none',
+                    gap: '0.35rem',
+                    transition: 'all 0.2s ease',
                   }}
                 >
-                  <Search size={14} />
+                  <Search size={14} style={{ color: activeTab === 'find' ? '#E6A700' : '#9CA3AF' }} />
                   Find a Ride
                 </button>
 
                 <button
                   type="button"
-                  onClick={onOfferRideClick}
+                  onClick={() => {
+                    setActiveTab('offer');
+                    if (onOfferRideClick) onOfferRideClick();
+                  }}
                   style={{
-                    background: 'none',
+                    flex: 1,
+                    padding: '0.45rem 0.5rem',
+                    borderRadius: '12px',
                     border: 'none',
-                    color: '#E6A700',
-                    fontWeight: '700',
-                    fontSize: '0.8rem',
+                    backgroundColor: activeTab === 'offer' ? '#E6A700' : 'transparent',
+                    color: activeTab === 'offer' ? '#111827' : '#6B7280',
+                    fontSize: '0.825rem',
+                    fontWeight: '800',
                     cursor: 'pointer',
-                    display: 'inline-flex',
+                    boxShadow: activeTab === 'offer' ? '0 2px 8px rgba(230, 167, 0, 0.25)' : 'none',
+                    display: 'flex',
                     alignItems: 'center',
-                    gap: '0.25rem',
-                    padding: '0.1rem',
+                    justifyContent: 'center',
+                    gap: '0.35rem',
+                    transition: 'all 0.2s ease',
                   }}
                 >
-                  Offer a Ride →
+                  <Car size={14} style={{ color: activeTab === 'offer' ? '#111827' : '#9CA3AF' }} />
+                  Offer a Ride
                 </button>
               </div>
 
@@ -292,24 +312,26 @@ export default function Hero({ onSearch, onOfferRideClick }) {
               <form onSubmit={handleSearchSubmit}>
                 {/* FROM FIELD */}
                 <div style={{ position: 'relative', marginBottom: '0.1rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', fontWeight: '600', color: '#6B7280', marginBottom: '0.1rem' }}>
-                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#E6A700', display: 'inline-block' }} />
-                    From
-                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.15rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.725rem', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#E6A700', display: 'inline-block' }} />
+                      From
+                    </label>
+                  </div>
 
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '0.5rem',
-                      padding: '0.55rem 0.75rem',
+                      gap: '0.4rem',
+                      padding: '0.5rem 0.65rem 0.5rem 0.75rem',
                       backgroundColor: '#F9FAFB',
                       border: '1px solid #E5E7EB',
                       borderRadius: '12px',
                       minHeight: '44px',
                     }}
                   >
-                    <MapPin size={14} style={{ color: '#E6A700', flexShrink: 0 }} />
+                    <MapPin size={15} style={{ color: '#E6A700', flexShrink: 0 }} />
                     <input
                       type="text"
                       value={fromLocation}
@@ -328,6 +350,31 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                         color: '#111827',
                       }}
                     />
+
+                    {/* Current Location Quick Button */}
+                    <button
+                      type="button"
+                      onClick={() => setFromLocation('Current Location (Bhawarkua, Indore)')}
+                      title="Use Current Location"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        padding: '0.2rem 0.5rem',
+                        backgroundColor: '#FFF4CC',
+                        color: '#C98F00',
+                        border: '1px solid rgba(230, 167, 0, 0.35)',
+                        borderRadius: '8px',
+                        fontSize: '0.675rem',
+                        fontWeight: '800',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Navigation size={11} style={{ transform: 'rotate(45deg)' }} />
+                      <span>Current Location</span>
+                    </button>
                   </div>
 
                   {showFromSuggestions && (
@@ -403,8 +450,8 @@ export default function Hero({ onSearch, onOfferRideClick }) {
 
                 {/* TO FIELD */}
                 <div style={{ position: 'relative', marginBottom: '0.45rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.7rem', fontWeight: '600', color: '#6B7280', marginBottom: '0.1rem' }}>
-                    <span style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#E6A700', display: 'inline-block' }} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.725rem', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.15rem' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#E6A700', display: 'inline-block' }} />
                     To
                   </label>
 
@@ -420,7 +467,7 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                       minHeight: '44px',
                     }}
                   >
-                    <MapPin size={14} style={{ color: '#E6A700', flexShrink: 0 }} />
+                    <MapPin size={15} style={{ color: '#E6A700', flexShrink: 0 }} />
                     <input
                       type="text"
                       value={toLocation}
@@ -565,10 +612,11 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                   </div>
                 </div>
 
-                {/* PASSENGERS ROW */}
+                {/* PASSENGERS / SEATS DYNAMIC ROW */}
                 <div style={{ marginBottom: '0.55rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: '600', color: '#6B7280', marginBottom: '0.1rem' }}>
-                    Passengers
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.725rem', fontWeight: '800', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.15rem' }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#E6A700', display: 'inline-block' }} />
+                    {activeTab === 'offer' ? 'Available Seats' : 'Passengers'}
                   </label>
 
                   <div
@@ -580,16 +628,16 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                       backgroundColor: '#F9FAFB',
                       border: '1px solid #E5E7EB',
                       borderRadius: '12px',
-                      minHeight: '42px',
+                      minHeight: '44px',
                     }}
                   >
                     <button
                       type="button"
                       onClick={() => setPassengers(Math.max(1, passengers - 1))}
                       style={{
-                        width: '26px',
-                        height: '26px',
-                        borderRadius: '7px',
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '8px',
                         border: 'none',
                         backgroundColor: '#FFFFFF',
                         color: '#E6A700',
@@ -597,24 +645,28 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.06)',
                       }}
                     >
-                      <Minus size={13} strokeWidth={3} />
+                      <Minus size={14} strokeWidth={3} />
                     </button>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.825rem', fontWeight: '800', color: '#111827' }}>
-                      <Users size={14} style={{ color: '#E6A700' }} />
-                      <span>{passengers} {passengers === 1 ? 'Person' : 'People'}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', fontWeight: '800', color: '#111827' }}>
+                      <Users size={15} style={{ color: '#E6A700' }} />
+                      <span>
+                        {activeTab === 'offer'
+                          ? `${passengers} ${passengers === 1 ? 'Seat' : 'Seats'}`
+                          : `${passengers} ${passengers === 1 ? 'Person' : 'People'}`}
+                      </span>
                     </div>
 
                     <button
                       type="button"
                       onClick={() => setPassengers(Math.min(6, passengers + 1))}
                       style={{
-                        width: '26px',
-                        height: '26px',
-                        borderRadius: '7px',
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '8px',
                         border: 'none',
                         backgroundColor: '#FFFFFF',
                         color: '#E6A700',
@@ -622,15 +674,15 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.06)',
                       }}
                     >
-                      <Plus size={13} strokeWidth={3} />
+                      <Plus size={14} strokeWidth={3} />
                     </button>
                   </div>
                 </div>
 
-                {/* SEARCH BUTTON - Refined Yellow Full Width */}
+                {/* DYNAMIC SUBMIT BUTTON - Refined Yellow Full Width */}
                 <button
                   type="submit"
                   className="btn btn-primary btn-shine"
@@ -650,10 +702,123 @@ export default function Hero({ onSearch, onOfferRideClick }) {
                     border: 'none',
                   }}
                 >
-                  <Search size={14} />
-                  <span>SEARCH RIDES</span>
+                  {activeTab === 'offer' ? <Car size={14} /> : <Search size={14} />}
+                  <span>{activeTab === 'offer' ? 'PUBLISH RIDE ROUTE' : 'FIND RIDES'}</span>
                 </button>
               </form>
+
+              {/* POPULAR QUICK ROUTES CHIPS */}
+              <div style={{ marginTop: '0.75rem', paddingTop: '0.65rem', borderTop: '1px solid #F3F4F6' }}>
+                <div style={{ fontSize: '0.675rem', fontWeight: '800', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <Zap size={12} style={{ color: '#E6A700' }} />
+                  <span>Popular Corridors</span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                  {[
+                    { from: 'Indore', to: 'Khargone' },
+                    { from: 'Indore', to: 'Bhopal' },
+                    { from: 'Indore', to: 'Ujjain' },
+                  ].map((route) => (
+                    <button
+                      key={`${route.from}-${route.to}`}
+                      type="button"
+                      onClick={() => {
+                        setFromLocation(route.from);
+                        setToLocation(route.to);
+                      }}
+                      style={{
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: 'var(--radius-full)',
+                        backgroundColor: '#FFF4CC',
+                        border: '1px solid rgba(230, 167, 0, 0.3)',
+                        color: '#111827',
+                        fontSize: '0.7rem',
+                        fontWeight: '700',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.2rem',
+                      }}
+                    >
+                      <span>{route.from}</span>
+                      <span style={{ color: '#C98F00' }}>➔</span>
+                      <span>{route.to}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* NEARBY LIVE RIDES PREVIEW */}
+              <div style={{ marginTop: '0.65rem', paddingTop: '0.6rem', borderTop: '1px solid #F3F4F6' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                  <div style={{ fontSize: '0.675rem', fontWeight: '800', color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                    <Car size={12} style={{ color: '#E6A700' }} />
+                    <span>Nearby Active Rides</span>
+                  </div>
+                  <span style={{ fontSize: '0.65rem', color: '#E6A700', fontWeight: '800' }}>Live Now</span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <div
+                    onClick={handleSearchSubmit}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.4rem 0.55rem',
+                      backgroundColor: '#FAFAFA',
+                      borderRadius: '10px',
+                      border: '1px solid #E5E7EB',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span style={{ fontSize: '0.85rem' }}>🚗</span>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#111827' }}>
+                          Rajesh S. ➔ Khargone
+                        </div>
+                        <div style={{ fontSize: '0.65rem', color: '#6B7280' }}>
+                          Today • 08:30 AM • 2 seats left
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.775rem', fontWeight: '800', color: '#C98F00', backgroundColor: '#FFF4CC', padding: '0.12rem 0.4rem', borderRadius: '6px' }}>
+                      ₹160
+                    </span>
+                  </div>
+
+                  <div
+                    onClick={handleSearchSubmit}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.4rem 0.55rem',
+                      backgroundColor: '#FAFAFA',
+                      borderRadius: '10px',
+                      border: '1px solid #E5E7EB',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <span style={{ fontSize: '0.85rem' }}>🚗</span>
+                      <div>
+                        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: '#111827' }}>
+                          Vikram S. ➔ Bhopal
+                        </div>
+                        <div style={{ fontSize: '0.65rem', color: '#6B7280' }}>
+                          Today • 09:15 AM • 3 seats left
+                        </div>
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.775rem', fontWeight: '800', color: '#C98F00', backgroundColor: '#FFF4CC', padding: '0.12rem 0.4rem', borderRadius: '6px' }}>
+                      ₹220
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
 
           </div>
