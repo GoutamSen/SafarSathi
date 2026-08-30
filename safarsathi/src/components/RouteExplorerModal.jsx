@@ -66,26 +66,66 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     [21.8247, 75.6102], // Khargone
   ];
 
+  // Fallback left alternative highway coordinates (Indore -> Khargone via Mandav/Dhamnod) - Image 2 Left Route
+  const defaultAlternativeLeft = [
+    [22.7196, 75.8577], // Indore
+    [22.6344, 75.8078], // Rau Circle
+    [22.6074, 75.6811], // Pithampur Bypass
+    [22.4000, 75.4500], // Dhar Road Junction
+    [22.3300, 75.4000], // Mandav
+    [22.2155, 75.4716], // Dhamnod
+    [22.0200, 75.6000], // Kasrawad
+    [21.8247, 75.6102], // Khargone
+  ];
+
+  // Fallback right alternative highway coordinates (Indore -> Khargone via Barwaha/Sanawad) - Image 2 Right Route
+  const defaultAlternativeRight = [
+    [22.7196, 75.8577], // Indore
+    [22.6850, 75.8450], // Rajendra Nagar
+    [22.4680, 75.8050], // Simrol
+    [22.3300, 75.8500], // Choral
+    [22.2540, 76.0400], // Barwaha
+    [22.1800, 76.0600], // Sanawad
+    [21.9000, 75.9000], // Gogawan Bypass
+    [21.8247, 75.6102], // Khargone
+  ];
+
   const [routePolyline, setRoutePolyline] = useState(defaultFallbackRoute);
+  const [alternativeLeftPolyline, setAlternativeLeftPolyline] = useState(defaultAlternativeLeft);
+  const [alternativeRightPolyline, setAlternativeRightPolyline] = useState(defaultAlternativeRight);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0); // 0 = Main Route, 1 = Left Alt, 2 = Right Alt
+
+  const fromName = corridor.from || 'Indore';
+  const toName = corridor.to || 'Khargone';
+  const originCoords = corridor.fromCoords || CITY_COORDS[fromName] || [22.7196, 75.8577];
+  const destinationCoords = corridor.toCoords || CITY_COORDS[toName] || [21.8247, 75.6102];
 
   // Dynamically fetch accurate OSRM road geometry for smooth curves snapped to highways
   useEffect(() => {
     let isMounted = true;
-    const fromName = corridor.from || 'Indore';
-    const toName = corridor.to || 'Khargone';
-
-    const startCoords = corridor.fromCoords || CITY_COORDS[fromName] || [22.7196, 75.8577];
-    const endCoords = corridor.toCoords || CITY_COORDS[toName] || [21.8247, 75.6102];
 
     const fetchRoadRoute = async () => {
       try {
         const response = await fetch(
-          `https://router.project-osrm.org/route/v1/driving/${startCoords[1]},${startCoords[0]};${endCoords[1]},${endCoords[0]}?overview=full&geometries=geojson`
+          `https://router.project-osrm.org/route/v1/driving/${originCoords[1]},${originCoords[0]};${destinationCoords[1]},${destinationCoords[0]}?overview=full&geometries=geojson&alternatives=true`
         );
         const data = await response.json();
-        if (isMounted && data.code === 'Ok' && data.routes?.[0]?.geometry?.coordinates) {
-          const latLngs = data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
-          setRoutePolyline(latLngs);
+        if (isMounted && data.code === 'Ok' && data.routes?.length > 0) {
+          const mainCoords = data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+          if (mainCoords.length > 0) {
+            mainCoords[0] = originCoords;
+            mainCoords[mainCoords.length - 1] = destinationCoords;
+          }
+          setRoutePolyline(mainCoords);
+
+          if (data.routes.length > 1 && data.routes[1].geometry?.coordinates) {
+            const altCoords = data.routes[1].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+            if (altCoords.length > 0) {
+              altCoords[0] = originCoords;
+              altCoords[altCoords.length - 1] = destinationCoords;
+            }
+            setAlternativeLeftPolyline(altCoords);
+          }
         }
       } catch (err) {
         console.warn('Could not fetch OSRM route, fallback active', err);
@@ -290,118 +330,129 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
         html,
         className: 'custom-leaflet-cluster-pin',
         iconSize: [60, 48],
-        iconAnchor: [30, 48],
+        iconAnchor: [0, 0],
       });
     }
 
-    // Individual Ride Pin (Selected ride gets strong green highlight glow)
+    // Individual Ride Pin (Selected ride gets strong highlight + label; unselected is compact dot without label clutter)
     let iconSymbol = status === 'upcoming' ? '📅' : status === 'completed' ? '✓' : '🚗';
-    let statusTag = isSelected
-      ? '🟢 Selected'
-      : status === 'live'
-        ? 'Live Ride'
-        : status === 'upcoming'
-          ? 'Upcoming'
-          : 'Past Trip';
 
+    if (isSelected) {
+      // 1. Selected Ride Pin (Highly Prominent Glow + Active Label)
+      const html = `
+        <div style="
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          transform: translate(-50%, -100%);
+          cursor: pointer;
+          z-index: 1000;
+        ">
+          <!-- Active Vehicle Circle Badge -->
+          <div style="
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #10B981;
+            color: #FFFFFF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            border: 3px solid #FFFFFF;
+            box-shadow: 0 0 22px #10B981, 0 0 0 5px rgba(16, 185, 129, 0.35);
+            transition: all 0.25s ease;
+          ">
+            ${iconSymbol}
+          </div>
+
+          <!-- Active Details Label (Shown ONLY for selected ride) -->
+          <div style="
+            background-color: #10B981;
+            color: #FFFFFF;
+            padding: 2px 8px;
+            border-radius: 8px;
+            font-size: 10px;
+            font-weight: 800;
+            font-family: sans-serif;
+            white-space: nowrap;
+            border: 1px solid #FFFFFF;
+            margin-top: 3px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+          ">
+            🟢 ${ride.driverName || 'Live Ride'} (${ride.costPerSeat || 'Book'})
+          </div>
+        </div>
+      `;
+      return L.divIcon({
+        html,
+        className: 'custom-leaflet-selected-pin',
+        iconSize: [120, 54],
+        iconAnchor: [0, 0],
+      });
+    }
+
+    // 2. Unselected Ride Marker (Compact 22px dot, NO text label clutter)
     const html = `
       <div style="
         display: flex;
-        flex-direction: column;
         align-items: center;
-        transform: translate(-50%, -100%);
+        justify-content: center;
+        transform: translate(-50%, -50%);
         cursor: pointer;
-        z-index: ${isSelected ? 1000 : 100};
+        z-index: 100;
       ">
-        <!-- Vehicle Circle Badge -->
         <div style="
-          width: ${isSelected ? '36px' : '26px'};
-          height: ${isSelected ? '36px' : '26px'};
+          width: 22px;
+          height: 22px;
           border-radius: 50%;
-          background-color: ${isSelected ? '#10B981' : color};
+          background-color: ${color};
           color: #FFFFFF;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: ${isSelected ? '16px' : '12px'};
-          border: ${isSelected ? '3px solid #FFFFFF' : '2.5px solid #FFFFFF'};
-          box-shadow: ${isSelected ? '0 0 20px #10B981, 0 0 0 5px rgba(16, 185, 129, 0.35)' : '0 2px 8px rgba(0,0,0,0.3)'};
-          transition: all 0.25s ease;
+          font-size: 11px;
+          border: 2px solid #FFFFFF;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+          transition: all 0.2s ease;
         ">
           ${iconSymbol}
-        </div>
-
-        <!-- Subtitle Label -->
-        <div style="
-          background-color: ${isSelected ? '#10B981' : 'rgba(15, 23, 42, 0.88)'};
-          color: #FFFFFF;
-          padding: ${isSelected ? '2px 8px' : '1px 6px'};
-          border-radius: 8px;
-          font-size: ${isSelected ? '10px' : '9px'};
-          font-weight: 800;
-          font-family: sans-serif;
-          white-space: nowrap;
-          border: ${isSelected ? '1px solid #FFFFFF' : `1px solid ${color}`};
-          margin-top: 2px;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-        ">
-          ${statusTag}
         </div>
       </div>
     `;
 
     return L.divIcon({
       html,
-      className: 'custom-leaflet-pin',
-      iconSize: [60, 48],
-      iconAnchor: [30, 48],
+      className: 'custom-leaflet-compact-pin',
+      iconSize: [22, 22],
+      iconAnchor: [0, 0],
     });
   };
 
-  // Start origin marker pin (Blue GPS dot with city label - Navigation style)
+  // Start origin marker pin (Google Maps style: 🔵 Blue circular marker)
   const startMarkerIcon = L.divIcon({
     html: `
       <div style="
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background-color: #1A73E8;
+        border: 3.5px solid #FFFFFF;
+        box-shadow: 0 0 16px rgba(26, 115, 232, 0.95), 0 3px 10px rgba(0,0,0,0.4);
         display: flex;
-        flex-direction: column;
         align-items: center;
+        justify-content: center;
         transform: translate(-50%, -50%);
       ">
-        <div style="
-          width: 22px;
-          height: 22px;
-          border-radius: 50%;
-          background-color: #2563EB;
-          border: 3px solid #FFFFFF;
-          box-shadow: 0 0 14px rgba(37, 99, 235, 0.9), 0 3px 8px rgba(0,0,0,0.4);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        ">
-          <div style="width: 7px; height: 7px; border-radius: 50%; background-color: #FFFFFF;"></div>
-        </div>
-        <div style="
-          background-color: rgba(15, 23, 42, 0.92);
-          color: #60A5FA;
-          padding: 1px 6px;
-          border-radius: 6px;
-          font-size: 9px;
-          font-weight: 800;
-          margin-top: 3px;
-          border: 1px solid rgba(96, 165, 250, 0.4);
-          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-          white-space: nowrap;
-        ">
-          Start: ${corridor.from || 'Indore'}
-        </div>
+        <div style="width: 6px; height: 6px; border-radius: 50%; background-color: #FFFFFF;"></div>
       </div>
     `,
     className: 'route-start-pin',
-    iconSize: [80, 48],
-    iconAnchor: [40, 11],
+    iconSize: [22, 22],
+    iconAnchor: [0, 0],
   });
 
-  // End destination marker pin (Red location drop pin with city label)
+  // End destination marker pin (Google Maps style: 🔴 Red destination pin)
   const endMarkerIcon = L.divIcon({
     html: `
       <div style="
@@ -414,12 +465,12 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           width: 28px;
           height: 28px;
           border-radius: 50% 50% 50% 0;
-          background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+          background: linear-gradient(135deg, #EA4335 0%, #D93025 100%);
           transform: rotate(-45deg);
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 14px rgba(220, 38, 38, 0.6);
+          box-shadow: 0 4px 14px rgba(234, 67, 53, 0.65);
           border: 2.5px solid #FFFFFF;
         ">
           <div style="
@@ -430,25 +481,11 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
             transform: rotate(45deg);
           "></div>
         </div>
-        <div style="
-          background-color: rgba(15, 23, 42, 0.92);
-          color: #F87171;
-          padding: 1px 6px;
-          border-radius: 6px;
-          font-size: 9px;
-          font-weight: 800;
-          margin-top: 3px;
-          border: 1px solid rgba(248, 113, 113, 0.4);
-          box-shadow: 0 2px 6px rgba(0,0,0,0.4);
-          white-space: nowrap;
-        ">
-          End: ${corridor.to || 'Khargone'}
-        </div>
       </div>
     `,
     className: 'route-end-pin',
-    iconSize: [80, 56],
-    iconAnchor: [40, 56],
+    iconSize: [28, 28],
+    iconAnchor: [0, 0],
   });
 
   const getTileUrl = () => {
@@ -760,6 +797,67 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
             </button>
           </div>
 
+          {/* Route Option Selector Pills (Google Maps Style: Primary vs Alternative) */}
+          <div
+            style={{
+              position: 'absolute',
+              top: '12px',
+              right: '12px',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+            }}
+          >
+            {/* Primary Route Pill */}
+            <button
+              onClick={() => setSelectedRouteIndex(0)}
+              style={{
+                backgroundColor: selectedRouteIndex === 0 ? 'rgba(26, 115, 232, 0.9)' : 'rgba(15, 23, 42, 0.85)',
+                color: '#FFFFFF',
+                border: selectedRouteIndex === 0 ? '1px solid #4285F4' : '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '16px',
+                padding: '0.25rem 0.6rem',
+                fontSize: '0.7rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                backdropFilter: 'blur(6px)',
+                boxShadow: '0 3px 10px rgba(0,0,0,0.3)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: selectedRouteIndex === 0 ? '#60A5FA' : '#94A3B8' }}></span>
+              Fastest · 3h 15m
+            </button>
+
+            {/* Alternative Route Pill */}
+            <button
+              onClick={() => setSelectedRouteIndex(1)}
+              style={{
+                backgroundColor: selectedRouteIndex === 1 ? 'rgba(26, 115, 232, 0.9)' : 'rgba(15, 23, 42, 0.85)',
+                color: selectedRouteIndex === 1 ? '#FFFFFF' : '#CBD5E1',
+                border: selectedRouteIndex === 1 ? '1px solid #4285F4' : '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '16px',
+                padding: '0.25rem 0.6rem',
+                fontSize: '0.7rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                backdropFilter: 'blur(6px)',
+                boxShadow: '0 3px 10px rgba(0,0,0,0.3)',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: selectedRouteIndex === 1 ? '#60A5FA' : '#64748B' }}></span>
+              Alt · 3h 45m (+30m)
+            </button>
+          </div>
+
           {/* Leaflet Map Container */}
           <div style={{ flex: 1, width: '100%', height: '100%', position: 'relative', zIndex: 1 }}>
             <MapContainer
@@ -775,46 +873,96 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                 attribution='&copy; Google Maps'
               />
 
-              {/* Polished Navigation-Style Dual-Layer Polyline */}
-              {/* Outer Casing/Shadow Line (Dark outline for high contrast) */}
-              <Polyline
-                positions={routePolyline}
-                color="#0F172A"
-                weight={10}
-                opacity={0.8}
-                lineCap="round"
-                lineJoin="round"
-              />
-
-              {/* Main Navigation Blue Polyline (Slim & Refined) */}
-              <Polyline
-                positions={routePolyline}
-                color="#2563EB"
-                weight={6}
-                opacity={1}
-                lineCap="round"
-                lineJoin="round"
-              />
-
-              {/* High-contrast Inner Highlight Core */}
-              <Polyline
-                positions={routePolyline}
-                color="#60A5FA"
-                weight={2}
-                opacity={0.9}
-                lineCap="round"
-                lineJoin="round"
-              />
-
-              {/* Start Location Pin (Blue Halo Dot) */}
-              {routePolyline && routePolyline.length > 0 && (
-                <Marker position={routePolyline[0]} icon={startMarkerIcon} />
+              {/* --- LEFT ALTERNATIVE ROUTE (Outlined Blue - Exact Image 2 Style) --- */}
+              {alternativeLeftPolyline && alternativeLeftPolyline.length > 0 && (
+                <>
+                  <Polyline
+                    positions={alternativeLeftPolyline}
+                    color="#4355B9"
+                    weight={selectedRouteIndex === 1 ? 12 : 7}
+                    opacity={selectedRouteIndex === 1 ? 1 : 0.85}
+                    lineCap="round"
+                    lineJoin="round"
+                    eventHandlers={{ click: () => setSelectedRouteIndex(1) }}
+                  />
+                  <Polyline
+                    positions={alternativeLeftPolyline}
+                    color={selectedRouteIndex === 1 ? '#0500B8' : '#F8FAFC'}
+                    weight={selectedRouteIndex === 1 ? 7 : 3}
+                    opacity={1}
+                    lineCap="round"
+                    lineJoin="round"
+                    eventHandlers={{ click: () => setSelectedRouteIndex(1) }}
+                  />
+                </>
               )}
 
-              {/* End Location Pin (Red Teardrop Pin) */}
-              {routePolyline && routePolyline.length > 0 && (
-                <Marker position={routePolyline[routePolyline.length - 1]} icon={endMarkerIcon} />
+              {/* --- RIGHT ALTERNATIVE ROUTE (Outlined Blue - Exact Image 2 Style) --- */}
+              {alternativeRightPolyline && alternativeRightPolyline.length > 0 && (
+                <>
+                  <Polyline
+                    positions={alternativeRightPolyline}
+                    color="#4355B9"
+                    weight={selectedRouteIndex === 2 ? 12 : 7}
+                    opacity={selectedRouteIndex === 2 ? 1 : 0.85}
+                    lineCap="round"
+                    lineJoin="round"
+                    eventHandlers={{ click: () => setSelectedRouteIndex(2) }}
+                  />
+                  <Polyline
+                    positions={alternativeRightPolyline}
+                    color={selectedRouteIndex === 2 ? '#0500B8' : '#F8FAFC'}
+                    weight={selectedRouteIndex === 2 ? 7 : 3}
+                    opacity={1}
+                    lineCap="round"
+                    lineJoin="round"
+                    eventHandlers={{ click: () => setSelectedRouteIndex(2) }}
+                  />
+                </>
               )}
+
+              {/* --- MAIN ACTIVE RIDE ROUTE (Thick Bold Deep Royal Navy Blue - Exact Image 2 Style) --- */}
+              {routePolyline && routePolyline.length > 0 && (
+                <>
+                  {/* Outer Dark Navy Border Casing */}
+                  <Polyline
+                    positions={routePolyline}
+                    color="#00004D"
+                    weight={selectedRouteIndex === 0 ? 16 : 9}
+                    opacity={selectedRouteIndex === 0 ? 0.95 : 0.7}
+                    lineCap="round"
+                    lineJoin="round"
+                    eventHandlers={{ click: () => setSelectedRouteIndex(0) }}
+                  />
+                  {/* Main Deep Royal Navy Blue Line (Thick & Bold) */}
+                  <Polyline
+                    positions={routePolyline}
+                    color={selectedRouteIndex === 0 ? '#0500B8' : '#4355B9'}
+                    weight={selectedRouteIndex === 0 ? 11 : 6}
+                    opacity={1}
+                    lineCap="round"
+                    lineJoin="round"
+                    eventHandlers={{ click: () => setSelectedRouteIndex(0) }}
+                  />
+                  {/* Vibrant Core Highlight */}
+                  {selectedRouteIndex === 0 && (
+                    <Polyline
+                      positions={routePolyline}
+                      color="#2015ED"
+                      weight={4}
+                      opacity={0.9}
+                      lineCap="round"
+                      lineJoin="round"
+                    />
+                  )}
+                </>
+              )}
+
+              {/* Start Location Pin (Blue Halo Dot - Locked to exact start of route) */}
+              <Marker position={originCoords} icon={startMarkerIcon} />
+
+              {/* End Location Pin (Red Teardrop Pin - Locked to exact end of route) */}
+              <Marker position={destinationCoords} icon={endMarkerIcon} />
 
               {/* Vehicle Pins */}
               {currentRidesList.map((ride) => {
