@@ -341,12 +341,22 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
   const createCustomMarkerIcon = (ride, isSelected, status) => {
     const color =
       status === 'live'
-        ? '#10B981'
+        ? '#EF4444'
         : status === 'upcoming'
           ? '#E6A700'
           : '#64748B';
 
     const isCluster = ride.clusterCount && ride.clusterCount > 1;
+
+    // Crisp Vector SVG Car Icon for high-res visibility
+    const carSvg = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.9 2 11.4 2 12v4c0 .6.4 1 1 1h2"/>
+        <circle cx="7" cy="17" r="2.2" fill="#FFFFFF"/>
+        <path d="M9 17h6"/>
+        <circle cx="17" cy="17" r="2.2" fill="#FFFFFF"/>
+      </svg>
+    `;
 
     // Cluster Marker (+5 / +4 Rides format for crowded areas)
     if (isCluster && !isSelected) {
@@ -364,7 +374,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background-color: ${color};
+            background: ${status === 'live' ? 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' : color};
             color: #FFFFFF;
             display: flex;
             align-items: center;
@@ -373,7 +383,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
             font-weight: 800;
             font-family: sans-serif;
             border: 3px solid #FFFFFF;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.35), 0 0 0 3px ${status === 'live' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(230, 167, 0, 0.3)'};
+            box-shadow: ${status === 'live' ? '0 0 16px rgba(239, 68, 68, 0.8), 0 4px 12px rgba(0,0,0,0.35)' : '0 4px 12px rgba(0,0,0,0.35)'};
           ">
             +${ride.clusterCount}
           </div>
@@ -402,11 +412,11 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
       });
     }
 
-    // Individual Ride Pin (Selected ride gets strong highlight + label; unselected is compact dot without label clutter)
-    let iconSymbol = status === 'upcoming' ? '📅' : status === 'completed' ? '✓' : '🚗';
+    // Individual Ride Pin
+    let iconContent = status === 'live' ? carSvg : (status === 'upcoming' ? '📅' : '✓');
 
     if (isSelected) {
-      // 1. Selected Ride Pin (Highly Prominent Glow + Active Label)
+      // 1. Selected Ride Pin (Highly Prominent Red Glow + Active Driver Label)
       const html = `
         <div style="
           display: flex;
@@ -418,37 +428,37 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
         ">
           <!-- Active Vehicle Circle Badge -->
           <div style="
-            width: 36px;
-            height: 36px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
-            background-color: #10B981;
+            background: ${status === 'live' ? 'linear-gradient(135deg, #EF4444 0%, #B91C1C 100%)' : color};
             color: #FFFFFF;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 16px;
-            border: 3px solid #FFFFFF;
-            box-shadow: 0 0 22px #10B981, 0 0 0 5px rgba(16, 185, 129, 0.35);
+            border: 3.5px solid #FFFFFF;
+            box-shadow: ${status === 'live' ? '0 0 24px #EF4444, 0 0 0 5px rgba(239, 68, 68, 0.35)' : '0 4px 14px rgba(0,0,0,0.4)'};
             transition: all 0.25s ease;
           ">
-            ${iconSymbol}
+            ${iconContent}
           </div>
 
           <!-- Active Details Label (Shown ONLY for selected ride) -->
           <div style="
-            background-color: #10B981;
+            background-color: ${status === 'live' ? '#EF4444' : color};
             color: #FFFFFF;
-            padding: 2px 8px;
-            border-radius: 8px;
+            padding: 3px 9px;
+            border-radius: 10px;
             font-size: 10px;
             font-weight: 800;
             font-family: sans-serif;
             white-space: nowrap;
             border: 1px solid #FFFFFF;
             margin-top: 3px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 14px rgba(0,0,0,0.5);
           ">
-            🟢 ${ride.driverName || 'Live Ride'} (${ride.costPerSeat || 'Book'})
+            ${status === 'live' ? '🔴 LIVE:' : '🚗'} ${ride.driverName || 'Live Driver'} (${ride.costPerSeat || 'Book'})
           </div>
         </div>
       `;
@@ -460,7 +470,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
       });
     }
 
-    // 2. Unselected Ride Marker (Compact 22px dot, NO text label clutter)
+    // 2. Unselected Live Ride Marker (Vibrant Red Pin with Radar Pulse Animation)
     const html = `
       <div style="
         display: flex;
@@ -471,20 +481,20 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
         z-index: 100;
       ">
         <div style="
-          width: 22px;
-          height: 22px;
+          width: 26px;
+          height: 26px;
           border-radius: 50%;
-          background-color: ${color};
+          background: ${status === 'live' ? 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' : color};
           color: #FFFFFF;
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 11px;
-          border: 2px solid #FFFFFF;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+          border: 2.5px solid #FFFFFF;
+          box-shadow: ${status === 'live' ? '0 0 16px rgba(239, 68, 68, 0.9), 0 3px 8px rgba(0,0,0,0.4)' : '0 2px 6px rgba(0,0,0,0.35)'};
           transition: all 0.2s ease;
         ">
-          ${iconSymbol}
+          ${iconContent}
         </div>
       </div>
     `;
@@ -492,7 +502,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     return L.divIcon({
       html,
       className: 'custom-leaflet-compact-pin',
-      iconSize: [22, 22],
+      iconSize: [26, 26],
       iconAnchor: [0, 0],
     });
   };
@@ -651,115 +661,124 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
             zIndex: 2000,
           }}
         >
-          {/* Live Tab */}
+          {/* Live Tab (Vibrant Crimson Red Button when Selected) */}
           <button
             onClick={() => {
               setActiveStatus('live');
               setSelectedRideId(null);
             }}
             style={{
-              padding: '0.45rem 0',
-              background: 'none',
-              border: 'none',
-              color: activeStatus === 'live' ? '#34D399' : '#94A3B8',
+              padding: '0.35rem 0.7rem',
+              backgroundColor: activeStatus === 'live' ? '#DC2626' : 'transparent',
+              border: activeStatus === 'live' ? '1.5px solid #F87171' : '1px solid transparent',
+              borderRadius: '20px',
+              color: '#FFFFFF',
               opacity: activeStatus === 'live' ? 1 : 0.65,
               fontSize: '0.775rem',
               fontWeight: '800',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.4rem',
-              position: 'relative',
-              borderBottom: activeStatus === 'live' ? '2.5px solid #10B981' : '2.5px solid transparent',
-              transition: 'all 0.2s ease',
+              gap: '0.45rem',
+              boxShadow: activeStatus === 'live' ? '0 2px 12px rgba(220, 38, 38, 0.65)' : 'none',
+              transition: 'all 0.25s ease',
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />
-            <span>Live</span>
             <span
               style={{
-                backgroundColor: activeStatus === 'live' ? 'rgba(16, 185, 129, 0.25)' : 'rgba(255, 255, 255, 0.08)',
-                color: activeStatus === 'live' ? '#34D399' : '#94A3B8',
-                padding: '1px 6px',
+                width: '7px',
+                height: '7px',
+                borderRadius: '50%',
+                backgroundColor: activeStatus === 'live' ? '#FFFFFF' : '#EF4444',
+                display: 'inline-block',
+                boxShadow: activeStatus === 'live' ? '0 0 6px #FFFFFF' : '0 0 6px #EF4444',
+              }}
+            />
+            <span style={{ color: activeStatus === 'live' ? '#FFFFFF' : '#F87171', fontWeight: '800', letterSpacing: '0.03em' }}>Live</span>
+            <span
+              style={{
+                backgroundColor: activeStatus === 'live' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(239, 68, 68, 0.18)',
+                color: activeStatus === 'live' ? '#FFFFFF' : '#F87171',
+                padding: '1px 6.5px',
                 borderRadius: '10px',
                 fontSize: '0.7rem',
                 fontWeight: '800',
-                border: activeStatus === 'live' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid transparent',
+                border: activeStatus === 'live' ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
               }}
             >
               {stats.activeNow}
             </span>
           </button>
 
-          {/* Upcoming Tab */}
+          {/* Upcoming Tab (Vibrant Warm Amber Button when Selected) */}
           <button
             onClick={() => {
               setActiveStatus('upcoming');
               setSelectedRideId(null);
             }}
             style={{
-              padding: '0.45rem 0',
-              background: 'none',
-              border: 'none',
-              color: activeStatus === 'upcoming' ? '#FBBF24' : '#94A3B8',
+              padding: '0.35rem 0.7rem',
+              backgroundColor: activeStatus === 'upcoming' ? '#D97706' : 'transparent',
+              border: activeStatus === 'upcoming' ? '1.5px solid #FBBF24' : '1px solid transparent',
+              borderRadius: '20px',
+              color: '#FFFFFF',
               opacity: activeStatus === 'upcoming' ? 1 : 0.65,
               fontSize: '0.775rem',
               fontWeight: '800',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.4rem',
-              position: 'relative',
-              borderBottom: activeStatus === 'upcoming' ? '2.5px solid #E6A700' : '2.5px solid transparent',
-              transition: 'all 0.2s ease',
+              gap: '0.45rem',
+              boxShadow: activeStatus === 'upcoming' ? '0 2px 12px rgba(217, 119, 6, 0.65)' : 'none',
+              transition: 'all 0.25s ease',
             }}
           >
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#E6A700', display: 'inline-block' }} />
-            <span>Upcoming</span>
+            <span style={{ width: '6.5px', height: '6.5px', borderRadius: '50%', backgroundColor: activeStatus === 'upcoming' ? '#FFFFFF' : '#F59E0B', display: 'inline-block' }} />
+            <span style={{ color: activeStatus === 'upcoming' ? '#FFFFFF' : '#FBBF24', fontWeight: '800' }}>Upcoming</span>
             <span
               style={{
-                backgroundColor: activeStatus === 'upcoming' ? 'rgba(230, 167, 0, 0.25)' : 'rgba(255, 255, 255, 0.08)',
-                color: activeStatus === 'upcoming' ? '#FBBF24' : '#94A3B8',
-                padding: '1px 6px',
+                backgroundColor: activeStatus === 'upcoming' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(245, 158, 11, 0.18)',
+                color: activeStatus === 'upcoming' ? '#FFFFFF' : '#FBBF24',
+                padding: '1px 6.5px',
                 borderRadius: '10px',
                 fontSize: '0.7rem',
                 fontWeight: '800',
-                border: activeStatus === 'upcoming' ? '1px solid rgba(230, 167, 0, 0.4)' : '1px solid transparent',
+                border: activeStatus === 'upcoming' ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)',
               }}
             >
               {stats.upcomingToday}
             </span>
           </button>
 
-          {/* Past Tab */}
+          {/* Past Tab (Clean Slate Gray Button when Selected) */}
           <button
             onClick={() => {
               setActiveStatus('completed');
               setSelectedRideId(null);
             }}
             style={{
-              padding: '0.45rem 0',
-              background: 'none',
-              border: 'none',
-              color: activeStatus === 'completed' ? '#FFFFFF' : '#94A3B8',
-              opacity: activeStatus === 'completed' ? 1 : 0.65,
+              padding: '0.35rem 0.7rem',
+              backgroundColor: activeStatus === 'completed' ? '#475569' : 'transparent',
+              border: activeStatus === 'completed' ? '1.5px solid #94A3B8' : '1px solid transparent',
+              borderRadius: '20px',
+              color: '#FFFFFF',
+              opacity: activeStatus === 'completed' ? 1 : 0.6,
               fontSize: '0.775rem',
               fontWeight: '800',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.4rem',
-              position: 'relative',
-              borderBottom: activeStatus === 'completed' ? '2.5px solid #94A3B8' : '2.5px solid transparent',
-              transition: 'all 0.2s ease',
+              gap: '0.45rem',
+              transition: 'all 0.25s ease',
             }}
           >
-            <span>✓ Past</span>
+            <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: activeStatus === 'completed' ? '#FFFFFF' : '#64748B', display: 'inline-block' }} />
+            <span style={{ color: activeStatus === 'completed' ? '#FFFFFF' : '#94A3B8' }}>Past</span>
             <span
               style={{
-                backgroundColor: activeStatus === 'completed' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.08)',
+                backgroundColor: activeStatus === 'completed' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(148, 163, 184, 0.16)',
                 color: activeStatus === 'completed' ? '#FFFFFF' : '#94A3B8',
-                padding: '1px 6px',
+                padding: '1px 6.5px',
                 borderRadius: '10px',
                 fontSize: '0.7rem',
                 fontWeight: '800',
