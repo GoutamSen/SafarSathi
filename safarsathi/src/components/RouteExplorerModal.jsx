@@ -128,19 +128,26 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
 
   const activeRouteInfo = routeOptionsData[selectedRouteIndex] || routeOptionsData[0];
 
-  // STRICT 2-STYLE ROUTE SYSTEM CONFIGURATIONS (Exact Specifications)
+  // Google Maps Exact 2-Style Route Configurations (Matching Reference Image)
   const ACTIVE_ROUTE_STYLE = {
-    color: '#0B1F8A',
-    weight: 7,
-    opacity: 1,
-    dashArray: null,
+    casingColor: '#00004D',
+    casingWeight: 16,
+    casingOpacity: 0.95,
+    mainColor: '#0500B8',
+    mainWeight: 11,
+    mainOpacity: 1,
+    coreColor: '#2015ED',
+    coreWeight: 4,
+    coreOpacity: 0.9,
   };
 
   const INACTIVE_ROUTE_STYLE = {
-    color: '#9CA3AF',
-    weight: 3,
-    opacity: 0.8,
-    dashArray: null,
+    outerColor: '#4355B9',
+    outerWeight: 7,
+    outerOpacity: 0.95,
+    innerColor: '#F8FAFC',
+    innerWeight: 3,
+    innerOpacity: 1,
   };
 
   const fromName = corridor.from || 'Indore';
@@ -507,6 +514,54 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     });
   };
 
+  // Google Maps Style Route Label Chip Marker Icon (White Speech Bubble Badge - Exact Reference Match)
+  const createRouteChipIcon = (routeData, isSelected) => {
+    // Hide chip on active selected route so main highway line is clear
+    if (isSelected) {
+      return L.divIcon({ html: '', className: 'hidden-route-chip', iconSize: [0, 0] });
+    }
+
+    let tagText = 'Similar ETA';
+    if (routeData.shortName === 'Sanawad') {
+      tagText = '23 min slower';
+    } else if (routeData.shortName === 'Fastest') {
+      tagText = 'Fastest';
+    }
+
+    return L.divIcon({
+      html: `
+        <div style="
+          background-color: #FFFFFF;
+          color: #374151;
+          border: 1px solid rgba(0, 0, 0, 0.15);
+          border-radius: 12px;
+          padding: 4px 10px;
+          font-size: 11.5px;
+          font-weight: 800;
+          font-family: sans-serif;
+          white-space: nowrap;
+          box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+          cursor: pointer;
+          transform: translate(-50%, -50%);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        ">
+          <span>${tagText}</span>
+        </div>
+      `,
+      className: 'custom-google-maps-route-chip',
+      iconSize: [110, 28],
+      iconAnchor: [0, 0],
+    });
+  };
+
+  const getRouteMidpoint = (coordsArray) => {
+    if (!coordsArray || coordsArray.length === 0) return null;
+    const midIdx = Math.floor(coordsArray.length / 2);
+    return coordsArray[midIdx];
+  };
+
   // Start origin marker pin (Google Maps style: 🔵 Blue circular marker)
   const startMarkerIcon = L.divIcon({
     html: `
@@ -809,15 +864,17 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                 attribution='&copy; Google Maps'
               />
 
-              {/* --- DYNAMIC 2-STYLE ROUTE RENDERING SYSTEM --- */}
+              {/* --- EXACT GOOGLE MAPS 2-STYLE ROUTE RENDERING SYSTEM --- */}
               {[
                 { id: 0, positions: routePolyline },
                 { id: 1, positions: alternativeLeftPolyline },
                 { id: 2, positions: alternativeRightPolyline },
-              ].map((r, idx) => {
-                if (!r.positions || r.positions.length === 0) return null;
-                const isSelected = selectedRouteIndex === idx;
-                const style = isSelected ? ACTIVE_ROUTE_STYLE : INACTIVE_ROUTE_STYLE;
+              ]
+                .sort((a, b) => (a.id === selectedRouteIndex ? 1 : b.id === selectedRouteIndex ? -1 : 0))
+                .map((r) => {
+                  if (!r.positions || r.positions.length === 0) return null;
+                  const idx = r.id;
+                  const isSelected = selectedRouteIndex === idx;
 
                 return (
                   <React.Fragment key={`route-style-${idx}-${isSelected ? 'active' : 'inactive'}`}>
@@ -830,18 +887,79 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                       eventHandlers={{ click: () => setSelectedRouteIndex(idx) }}
                     />
 
-                    {/* SINGLE POLYLINE FOR STRICT 2-STYLE COMPLIANCE */}
-                    <Polyline
-                      positions={r.positions}
-                      color={style.color}
-                      weight={style.weight}
-                      opacity={style.opacity}
-                      dashArray={style.dashArray}
-                      lineCap="round"
-                      lineJoin="round"
-                      eventHandlers={{ click: () => setSelectedRouteIndex(idx) }}
-                    />
+                    {isSelected ? (
+                      /* STYLE 1: MAIN SELECTED ROUTE (Solid Thick Royal Blue Highway) */
+                      <>
+                        <Polyline
+                          positions={r.positions}
+                          color={ACTIVE_ROUTE_STYLE.casingColor}
+                          weight={ACTIVE_ROUTE_STYLE.casingWeight}
+                          opacity={ACTIVE_ROUTE_STYLE.casingOpacity}
+                          lineCap="round"
+                          lineJoin="round"
+                          eventHandlers={{ click: () => setSelectedRouteIndex(idx) }}
+                        />
+                        <Polyline
+                          positions={r.positions}
+                          color={ACTIVE_ROUTE_STYLE.mainColor}
+                          weight={ACTIVE_ROUTE_STYLE.mainWeight}
+                          opacity={ACTIVE_ROUTE_STYLE.mainOpacity}
+                          lineCap="round"
+                          lineJoin="round"
+                          eventHandlers={{ click: () => setSelectedRouteIndex(idx) }}
+                        />
+                        <Polyline
+                          positions={r.positions}
+                          color={ACTIVE_ROUTE_STYLE.coreColor}
+                          weight={ACTIVE_ROUTE_STYLE.coreWeight}
+                          opacity={ACTIVE_ROUTE_STYLE.coreOpacity}
+                          lineCap="round"
+                          lineJoin="round"
+                        />
+                      </>
+                    ) : (
+                      /* STYLE 2: NORMAL ALTERNATIVE ROUTE (Outlined Blue Road) */
+                      <>
+                        <Polyline
+                          positions={r.positions}
+                          color={INACTIVE_ROUTE_STYLE.outerColor}
+                          weight={INACTIVE_ROUTE_STYLE.outerWeight}
+                          opacity={INACTIVE_ROUTE_STYLE.outerOpacity}
+                          lineCap="round"
+                          lineJoin="round"
+                          eventHandlers={{ click: () => setSelectedRouteIndex(idx) }}
+                        />
+                        <Polyline
+                          positions={r.positions}
+                          color={INACTIVE_ROUTE_STYLE.innerColor}
+                          weight={INACTIVE_ROUTE_STYLE.innerWeight}
+                          opacity={INACTIVE_ROUTE_STYLE.innerOpacity}
+                          lineCap="round"
+                          lineJoin="round"
+                          eventHandlers={{ click: () => setSelectedRouteIndex(idx) }}
+                        />
+                      </>
+                    )}
                   </React.Fragment>
+                );
+              })}
+
+              {/* --- GOOGLE MAPS STYLE ROUTE LABEL CHIPS ON MAP --- */}
+              {[
+                { id: 0, positions: routePolyline, data: routeOptionsData[0] },
+                { id: 1, positions: alternativeLeftPolyline, data: routeOptionsData[1] },
+                { id: 2, positions: alternativeRightPolyline, data: routeOptionsData[2] },
+              ].map((r, idx) => {
+                const mid = getRouteMidpoint(r.positions);
+                if (!mid) return null;
+                const isSelected = selectedRouteIndex === idx;
+                return (
+                  <Marker
+                    key={`chip-${idx}-${isSelected ? 'sel' : 'unsel'}`}
+                    position={mid}
+                    icon={createRouteChipIcon(r.data, isSelected)}
+                    eventHandlers={{ click: () => setSelectedRouteIndex(idx) }}
+                  />
                 );
               })}
 
