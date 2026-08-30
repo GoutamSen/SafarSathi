@@ -93,39 +93,107 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
   const [routePolyline, setRoutePolyline] = useState(defaultFallbackRoute);
   const [alternativeLeftPolyline, setAlternativeLeftPolyline] = useState(defaultAlternativeLeft);
   const [alternativeRightPolyline, setAlternativeRightPolyline] = useState(defaultAlternativeRight);
-  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0); // 0 = Main Route, 1 = Left Alt, 2 = Right Alt
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0); // 0 = Lowest Km Main Route (127 km), 1 = Mandav Alt, 2 = Sanawad Alt
+
+  // Route metadata options - Lowest distance route (127 km) is default main route
+  const routeOptionsData = [
+    {
+      index: 0,
+      name: 'Fastest Highway (SH-27)',
+      shortName: 'Fastest',
+      duration: '3 hr 15 min',
+      distance: '127 km',
+      eta: '7:09 pm',
+      tag: 'Main Route'
+    },
+    {
+      index: 1,
+      name: 'Via Mandav / Dhamnod',
+      shortName: 'Mandav',
+      duration: '3 hr 45 min',
+      distance: '161 km',
+      eta: '7:39 pm',
+      tag: 'Alt Route'
+    },
+    {
+      index: 2,
+      name: 'Via Sanawad / Barwaha',
+      shortName: 'Sanawad',
+      duration: '3 hr 38 min',
+      distance: '148 km',
+      eta: '7:32 pm',
+      tag: 'Alt Route'
+    }
+  ];
+
+  const activeRouteInfo = routeOptionsData[selectedRouteIndex] || routeOptionsData[0];
+
+  // STRICT 2-STYLE ROUTE SYSTEM CONFIGURATIONS (Exact Specifications)
+  const ACTIVE_ROUTE_STYLE = {
+    color: '#0B1F8A',
+    weight: 7,
+    opacity: 1,
+    dashArray: null,
+  };
+
+  const INACTIVE_ROUTE_STYLE = {
+    color: '#9CA3AF',
+    weight: 3,
+    opacity: 0.8,
+    dashArray: null,
+  };
 
   const fromName = corridor.from || 'Indore';
   const toName = corridor.to || 'Khargone';
   const originCoords = corridor.fromCoords || CITY_COORDS[fromName] || [22.7196, 75.8577];
   const destinationCoords = corridor.toCoords || CITY_COORDS[toName] || [21.8247, 75.6102];
 
-  // Dynamically fetch accurate OSRM road geometry for smooth curves snapped to highways
+  // Dynamically fetch accurate OSRM road geometry for smooth curves snapped to highways for all 3 routes
   useEffect(() => {
     let isMounted = true;
 
     const fetchRoadRoute = async () => {
       try {
-        const response = await fetch(
-          `https://router.project-osrm.org/route/v1/driving/${originCoords[1]},${originCoords[0]};${destinationCoords[1]},${destinationCoords[0]}?overview=full&geometries=geojson&alternatives=true`
+        // Route 0 (Direct SH-27 Maheshwar)
+        const res0 = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${originCoords[1]},${originCoords[0]};${destinationCoords[1]},${destinationCoords[0]}?overview=full&geometries=geojson`
         );
-        const data = await response.json();
-        if (isMounted && data.code === 'Ok' && data.routes?.length > 0) {
-          const mainCoords = data.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
-          if (mainCoords.length > 0) {
-            mainCoords[0] = originCoords;
-            mainCoords[mainCoords.length - 1] = destinationCoords;
+        const data0 = await res0.json();
+        if (isMounted && data0.code === 'Ok' && data0.routes?.[0]?.geometry?.coordinates) {
+          const coords0 = data0.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+          if (coords0.length > 0) {
+            coords0[0] = originCoords;
+            coords0[coords0.length - 1] = destinationCoords;
           }
-          setRoutePolyline(mainCoords);
+          setRoutePolyline(coords0);
+        }
 
-          if (data.routes.length > 1 && data.routes[1].geometry?.coordinates) {
-            const altCoords = data.routes[1].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
-            if (altCoords.length > 0) {
-              altCoords[0] = originCoords;
-              altCoords[altCoords.length - 1] = destinationCoords;
-            }
-            setAlternativeLeftPolyline(altCoords);
+        // Route 1 (Via Mandav / Dhamnod NH-52)
+        const res1 = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${originCoords[1]},${originCoords[0]};75.4000,22.3300;${destinationCoords[1]},${destinationCoords[0]}?overview=full&geometries=geojson`
+        );
+        const data1 = await res1.json();
+        if (isMounted && data1.code === 'Ok' && data1.routes?.[0]?.geometry?.coordinates) {
+          const coords1 = data1.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+          if (coords1.length > 0) {
+            coords1[0] = originCoords;
+            coords1[coords1.length - 1] = destinationCoords;
           }
+          setAlternativeLeftPolyline(coords1);
+        }
+
+        // Route 2 (Via Sanawad / Barwaha SH-27)
+        const res2 = await fetch(
+          `https://router.project-osrm.org/route/v1/driving/${originCoords[1]},${originCoords[0]};76.0400,22.2540;${destinationCoords[1]},${destinationCoords[0]}?overview=full&geometries=geojson`
+        );
+        const data2 = await res2.json();
+        if (isMounted && data2.code === 'Ok' && data2.routes?.[0]?.geometry?.coordinates) {
+          const coords2 = data2.routes[0].geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+          if (coords2.length > 0) {
+            coords2[0] = originCoords;
+            coords2[coords2.length - 1] = destinationCoords;
+          }
+          setAlternativeRightPolyline(coords2);
         }
       } catch (err) {
         console.warn('Could not fetch OSRM route, fallback active', err);
@@ -706,159 +774,8 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
         {/* 3. HERO MAP VIEWPORT CANVAS */}
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-          {/* Clean Segmented Control Filter Overlay (Top Left) */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '12px',
-              left: '12px',
-              zIndex: 1000,
-              backgroundColor: 'rgba(15, 23, 42, 0.85)',
-              backdropFilter: 'blur(8px)',
-              borderRadius: '20px',
-              padding: '0.2rem 0.35rem',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-              boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
-            }}
-          >
-            {/* Live Rides Segment Button */}
-            <button
-              onClick={() => {
-                setActiveStatus('live');
-                setSelectedRideId(null);
-              }}
-              style={{
-                background: activeStatus === 'live' ? 'rgba(16, 185, 129, 0.25)' : 'transparent',
-                border: activeStatus === 'live' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid transparent',
-                borderRadius: '16px',
-                padding: '0.25rem 0.6rem',
-                color: activeStatus === 'live' ? '#34D399' : '#94A3B8',
-                fontSize: '0.725rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#10B981', display: 'inline-block' }} />
-              Live Rides
-            </button>
 
-            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem' }}>|</span>
 
-            {/* Upcoming Segment Button */}
-            <button
-              onClick={() => {
-                setActiveStatus('upcoming');
-                setSelectedRideId(null);
-              }}
-              style={{
-                background: activeStatus === 'upcoming' ? 'rgba(230, 167, 0, 0.25)' : 'transparent',
-                border: activeStatus === 'upcoming' ? '1px solid rgba(230, 167, 0, 0.4)' : '1px solid transparent',
-                borderRadius: '16px',
-                padding: '0.25rem 0.6rem',
-                color: activeStatus === 'upcoming' ? '#FBBF24' : '#94A3B8',
-                fontSize: '0.725rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.35rem',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <span style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#E6A700', display: 'inline-block' }} />
-              Upcoming
-            </button>
-
-            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: '0.75rem' }}>|</span>
-
-            {/* Filter Icon Button */}
-            <button
-              onClick={() => {}}
-              title="Filter Rides"
-              style={{
-                background: 'transparent',
-                border: 'none',
-                padding: '0.25rem 0.4rem',
-                color: '#94A3B8',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Filter size={13} />
-            </button>
-          </div>
-
-          {/* Route Option Selector Pills (Google Maps Style: Primary vs Alternative) */}
-          <div
-            style={{
-              position: 'absolute',
-              top: '12px',
-              right: '12px',
-              zIndex: 1000,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-            }}
-          >
-            {/* Primary Route Pill */}
-            <button
-              onClick={() => setSelectedRouteIndex(0)}
-              style={{
-                backgroundColor: selectedRouteIndex === 0 ? 'rgba(26, 115, 232, 0.9)' : 'rgba(15, 23, 42, 0.85)',
-                color: '#FFFFFF',
-                border: selectedRouteIndex === 0 ? '1px solid #4285F4' : '1px solid rgba(255, 255, 255, 0.15)',
-                borderRadius: '16px',
-                padding: '0.25rem 0.6rem',
-                fontSize: '0.7rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                backdropFilter: 'blur(6px)',
-                boxShadow: '0 3px 10px rgba(0,0,0,0.3)',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: selectedRouteIndex === 0 ? '#60A5FA' : '#94A3B8' }}></span>
-              Fastest · 3h 15m
-            </button>
-
-            {/* Alternative Route Pill */}
-            <button
-              onClick={() => setSelectedRouteIndex(1)}
-              style={{
-                backgroundColor: selectedRouteIndex === 1 ? 'rgba(26, 115, 232, 0.9)' : 'rgba(15, 23, 42, 0.85)',
-                color: selectedRouteIndex === 1 ? '#FFFFFF' : '#CBD5E1',
-                border: selectedRouteIndex === 1 ? '1px solid #4285F4' : '1px solid rgba(255, 255, 255, 0.15)',
-                borderRadius: '16px',
-                padding: '0.25rem 0.6rem',
-                fontSize: '0.7rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.3rem',
-                backdropFilter: 'blur(6px)',
-                boxShadow: '0 3px 10px rgba(0,0,0,0.3)',
-                transition: 'all 0.2s ease',
-              }}
-            >
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: selectedRouteIndex === 1 ? '#60A5FA' : '#64748B' }}></span>
-              Alt · 3h 45m (+30m)
-            </button>
-          </div>
-
-          {/* Leaflet Map Container */}
           <div style={{ flex: 1, width: '100%', height: '100%', position: 'relative', zIndex: 1 }}>
             <MapContainer
               center={mapCenter}
@@ -873,90 +790,41 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                 attribution='&copy; Google Maps'
               />
 
-              {/* --- LEFT ALTERNATIVE ROUTE (Outlined Blue - Exact Image 2 Style) --- */}
-              {alternativeLeftPolyline && alternativeLeftPolyline.length > 0 && (
-                <>
-                  <Polyline
-                    positions={alternativeLeftPolyline}
-                    color="#4355B9"
-                    weight={selectedRouteIndex === 1 ? 12 : 7}
-                    opacity={selectedRouteIndex === 1 ? 1 : 0.85}
-                    lineCap="round"
-                    lineJoin="round"
-                    eventHandlers={{ click: () => setSelectedRouteIndex(1) }}
-                  />
-                  <Polyline
-                    positions={alternativeLeftPolyline}
-                    color={selectedRouteIndex === 1 ? '#0500B8' : '#F8FAFC'}
-                    weight={selectedRouteIndex === 1 ? 7 : 3}
-                    opacity={1}
-                    lineCap="round"
-                    lineJoin="round"
-                    eventHandlers={{ click: () => setSelectedRouteIndex(1) }}
-                  />
-                </>
-              )}
+              {/* --- DYNAMIC 2-STYLE ROUTE RENDERING SYSTEM --- */}
+              {[
+                { id: 0, positions: routePolyline },
+                { id: 1, positions: alternativeLeftPolyline },
+                { id: 2, positions: alternativeRightPolyline },
+              ].map((r, idx) => {
+                if (!r.positions || r.positions.length === 0) return null;
+                const isSelected = selectedRouteIndex === idx;
+                const style = isSelected ? ACTIVE_ROUTE_STYLE : INACTIVE_ROUTE_STYLE;
 
-              {/* --- RIGHT ALTERNATIVE ROUTE (Outlined Blue - Exact Image 2 Style) --- */}
-              {alternativeRightPolyline && alternativeRightPolyline.length > 0 && (
-                <>
-                  <Polyline
-                    positions={alternativeRightPolyline}
-                    color="#4355B9"
-                    weight={selectedRouteIndex === 2 ? 12 : 7}
-                    opacity={selectedRouteIndex === 2 ? 1 : 0.85}
-                    lineCap="round"
-                    lineJoin="round"
-                    eventHandlers={{ click: () => setSelectedRouteIndex(2) }}
-                  />
-                  <Polyline
-                    positions={alternativeRightPolyline}
-                    color={selectedRouteIndex === 2 ? '#0500B8' : '#F8FAFC'}
-                    weight={selectedRouteIndex === 2 ? 7 : 3}
-                    opacity={1}
-                    lineCap="round"
-                    lineJoin="round"
-                    eventHandlers={{ click: () => setSelectedRouteIndex(2) }}
-                  />
-                </>
-              )}
-
-              {/* --- MAIN ACTIVE RIDE ROUTE (Thick Bold Deep Royal Navy Blue - Exact Image 2 Style) --- */}
-              {routePolyline && routePolyline.length > 0 && (
-                <>
-                  {/* Outer Dark Navy Border Casing */}
-                  <Polyline
-                    positions={routePolyline}
-                    color="#00004D"
-                    weight={selectedRouteIndex === 0 ? 16 : 9}
-                    opacity={selectedRouteIndex === 0 ? 0.95 : 0.7}
-                    lineCap="round"
-                    lineJoin="round"
-                    eventHandlers={{ click: () => setSelectedRouteIndex(0) }}
-                  />
-                  {/* Main Deep Royal Navy Blue Line (Thick & Bold) */}
-                  <Polyline
-                    positions={routePolyline}
-                    color={selectedRouteIndex === 0 ? '#0500B8' : '#4355B9'}
-                    weight={selectedRouteIndex === 0 ? 11 : 6}
-                    opacity={1}
-                    lineCap="round"
-                    lineJoin="round"
-                    eventHandlers={{ click: () => setSelectedRouteIndex(0) }}
-                  />
-                  {/* Vibrant Core Highlight */}
-                  {selectedRouteIndex === 0 && (
+                return (
+                  <React.Fragment key={`route-style-${idx}-${isSelected ? 'active' : 'inactive'}`}>
+                    {/* Wide 25px Invisible Touch Target for Easy Map Tapping */}
                     <Polyline
-                      positions={routePolyline}
-                      color="#2015ED"
-                      weight={4}
-                      opacity={0.9}
+                      positions={r.positions}
+                      color="transparent"
+                      weight={25}
+                      opacity={0.001}
+                      eventHandlers={{ click: () => setSelectedRouteIndex(idx) }}
+                    />
+
+                    {/* SINGLE POLYLINE FOR STRICT 2-STYLE COMPLIANCE */}
+                    <Polyline
+                      positions={r.positions}
+                      color={style.color}
+                      weight={style.weight}
+                      opacity={style.opacity}
+                      dashArray={style.dashArray}
                       lineCap="round"
                       lineJoin="round"
+                      eventHandlers={{ click: () => setSelectedRouteIndex(idx) }}
                     />
-                  )}
-                </>
-              )}
+                  </React.Fragment>
+                );
+              })}
 
               {/* Start Location Pin (Blue Halo Dot - Locked to exact start of route) */}
               <Marker position={originCoords} icon={startMarkerIcon} />
@@ -985,7 +853,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
               onClick={() => setMapStyle(mapStyle === 'google-roadmap' ? 'google-satellite' : 'google-roadmap')}
               style={{
                 position: 'absolute',
-                bottom: '16px',
+                bottom: selectedRide ? '16px' : '82px',
                 right: '16px',
                 zIndex: 1000,
                 backgroundColor: 'rgba(15, 23, 42, 0.85)',
@@ -1001,11 +869,86 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                 alignItems: 'center',
                 gap: '0.35rem',
                 boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                transition: 'all 0.2s ease',
               }}
             >
               <Layers size={13} />
               <span>{mapStyle === 'google-roadmap' ? 'Satellite' : 'Roadmap'}</span>
             </button>
+
+            {/* Google Maps Style Bottom Route Summary Bar (Exact Match to Reference Screenshot) */}
+            {!selectedRide && (
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: '16px',
+                  left: '16px',
+                  right: '16px',
+                  zIndex: 1000,
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '36px',
+                  padding: '0.65rem 1.15rem',
+                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.25)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  border: '1px solid rgba(0, 0, 0, 0.05)',
+                  backdropFilter: 'blur(10px)',
+                }}
+              >
+                {/* Dismiss / Close Round Button */}
+                <button
+                  onClick={onClose}
+                  title="Close Map"
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F1F5F9',
+                    border: '1px solid #E2E8F0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#334155',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <X size={18} />
+                </button>
+
+                {/* Center Route Metrics Block (Big Bold Green Time + Distance km & ETA) */}
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ fontSize: '1.35rem', fontWeight: '800', color: '#15803D', lineHeight: 1.1, fontFamily: 'sans-serif' }}>
+                    {activeRouteInfo.duration}
+                  </div>
+                  <div style={{ fontSize: '0.8rem', fontWeight: '700', color: '#64748B', marginTop: '2px', fontFamily: 'sans-serif' }}>
+                    {activeRouteInfo.distance} <span style={{ opacity: 0.5 }}>•</span> {activeRouteInfo.eta}
+                  </div>
+                </div>
+
+                {/* Navigation / Route Switch Action Button */}
+                <button
+                  onClick={() => setSelectedRouteIndex((prev) => (prev + 1) % routeOptionsData.length)}
+                  title="Switch Route"
+                  style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '50%',
+                    backgroundColor: '#F1F5F9',
+                    border: '1px solid #E2E8F0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    color: '#334155',
+                    transition: 'all 0.2s ease',
+                  }}
+                >
+                  <Navigation size={18} style={{ transform: 'rotate(45deg)' }} />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* 4. SLIDE-UP RIDE DETAIL BOTTOM SHEET CARD */}
