@@ -10,7 +10,8 @@ import {
   Layers,
   Car,
   Info,
-  Filter
+  Filter,
+  Maximize2
 } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -623,39 +624,68 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
       });
     }
 
-    // 2. Unselected Live Ride Marker (Vibrant Red Pin with Radar Pulse Animation)
+    // 2. Unselected Ride Marker (Permanent Mini Badge Tag with Driver Name & Price)
+    const driverFirstName = ride.driverName ? ride.driverName.split(' ')[0] : 'Driver';
+    const priceText = ride.costPerSeat || '';
+    const hasTagInfo = ride.driverName || ride.costPerSeat;
+
     const html = `
       <div style="
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        transform: translate(-50%, -50%);
+        transform: translate(-50%, -100%);
         cursor: pointer;
-        z-index: 100;
+        z-index: 500;
       ">
+        <!-- Circle Pin -->
         <div style="
-          width: 26px;
-          height: 26px;
+          width: 28px;
+          height: 28px;
           border-radius: 50%;
           background: ${status === 'live' ? 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)' : color};
           color: #FFFFFF;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 11px;
+          font-size: 12px;
+          font-weight: 800;
           border: 2.5px solid #FFFFFF;
-          box-shadow: ${status === 'live' ? '0 0 16px rgba(239, 68, 68, 0.9), 0 3px 8px rgba(0,0,0,0.4)' : '0 2px 6px rgba(0,0,0,0.35)'};
+          box-shadow: ${status === 'live' ? '0 0 16px rgba(239, 68, 68, 0.9), 0 3px 8px rgba(0,0,0,0.4)' : '0 3px 8px rgba(0,0,0,0.35)'};
           transition: all 0.2s ease;
         ">
           ${iconContent}
         </div>
+
+        ${hasTagInfo ? `
+          <!-- Permanent Mini Badge Label -->
+          <div style="
+            background-color: rgba(15, 23, 42, 0.92);
+            color: #FFFFFF;
+            padding: 2px 7px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 800;
+            font-family: sans-serif;
+            white-space: nowrap;
+            border: 1px solid ${color};
+            margin-top: 2px;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 3px;
+          ">
+            <span>🚗 ${driverFirstName}</span>
+            <span style="color: ${status === 'live' ? '#F87171' : '#FBBF24'}; font-weight: 900;">(${priceText})</span>
+          </div>
+        ` : ''}
       </div>
     `;
 
     return L.divIcon({
       html,
       className: 'custom-leaflet-compact-pin',
-      iconSize: [26, 26],
+      iconSize: [95, 48],
       iconAnchor: [0, 0],
     });
   };
@@ -1003,7 +1033,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
         {/* 3. HERO MAP VIEWPORT CANVAS */}
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-          {/* Floating Reset Zoom Button when Cluster Hub is Expanded */}
+          {/* Sleek Compact Floating Reset Zoom Button (Top Right) */}
           {expandedClusterId && (
             <button
               onClick={() => {
@@ -1012,28 +1042,30 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                 setMapZoom(9);
                 setSelectedRideId(null);
               }}
+              title="Reset Zoom to Corridor Overview"
               style={{
                 position: 'absolute',
-                top: '16px',
-                left: '50%',
-                transform: 'translateX(-50%)',
+                top: '14px',
+                right: '14px',
                 zIndex: 1000,
-                backgroundColor: '#E6A700',
-                color: '#FFFFFF',
-                border: 'none',
+                backgroundColor: 'rgba(15, 23, 42, 0.88)',
+                backdropFilter: 'blur(8px)',
+                border: '1px solid rgba(230, 167, 0, 0.65)',
                 borderRadius: '20px',
-                padding: '0.45rem 1.1rem',
-                fontSize: '0.775rem',
+                padding: '0.35rem 0.75rem',
+                color: '#FBBF24',
+                fontSize: '0.725rem',
                 fontWeight: '800',
                 cursor: 'pointer',
-                boxShadow: '0 4px 16px rgba(230, 167, 0, 0.55)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.4rem',
+                gap: '0.35rem',
+                boxShadow: '0 4px 14px rgba(0,0,0,0.35)',
                 transition: 'all 0.2s ease',
               }}
             >
-              <span>🔍 Back to Corridor Overview (Reset Zoom)</span>
+              <Maximize2 size={13} />
+              <span>Corridor View</span>
             </button>
           )}
 
