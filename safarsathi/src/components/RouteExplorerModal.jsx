@@ -11,7 +11,8 @@ import {
   Car,
   Info,
   Filter,
-  Maximize2
+  Maximize2,
+  Calendar
 } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -55,6 +56,8 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
   const [mapZoom, setMapZoom] = useState(9);
   const [mapCenterPos, setMapCenterPos] = useState(defaultCenter);
   const [expandedClusterId, setExpandedClusterId] = useState(null);
+  const [upcomingDateFilter, setUpcomingDateFilter] = useState('all'); // 'all' (Today & Tomorrow default) | 'today' | 'tomorrow' | 'week' (Next 7 Days)
+  const [customSelectedDate, setCustomSelectedDate] = useState('');
 
   // Fallback highway coordinates (Indore -> Khargone via SH-27 / Mhow / Simrol / Maheshwar)
   const defaultFallbackRoute = [
@@ -282,7 +285,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     },
   ];
 
-  // 2. Upcoming Scheduled Rides (With Multi-Ride Cluster Support)
+  // 2. Upcoming Scheduled Rides (With Multi-Ride Cluster & Date Filter Support)
   const upcomingRides = [
     {
       id: `re-up-1`,
@@ -290,6 +293,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
       clusterCount: 4,
       lat: 22.7196,
       lng: 75.8577,
+      dateGroup: 'today',
       hubName: 'Rajwada Pickup Hub',
       currentLocation: 'Rajwada Pickup Hub (4 Rides)',
       departureTime: 'Today · 10:00 AM onwards',
@@ -300,6 +304,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           id: `re-up-1-a`,
           hubId: `re-up-1`,
           hubName: 'Rajwada Hub',
+          dateGroup: 'today',
           routeFrom: corridor.from || 'Indore',
           routeTo: corridor.to || 'Khargone',
           lat: 22.7196,
@@ -308,6 +313,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           departureTime: 'Today · 10:00 AM',
           driverName: 'Suresh Patel',
           driverRating: '4.90',
+          vehicleType: 'SUV',
           vehicleModel: 'Hyundai Creta (AC)',
           costPerSeat: '₹180',
           availableSeats: 2,
@@ -318,6 +324,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           id: `re-up-1-b`,
           hubId: `re-up-1`,
           hubName: 'Rajwada Hub',
+          dateGroup: 'today',
           routeFrom: corridor.from || 'Indore',
           routeTo: corridor.to || 'Khargone',
           lat: 22.7230,
@@ -326,6 +333,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           departureTime: 'Today · 10:15 AM',
           driverName: 'Rahul Sharma',
           driverRating: '4.85',
+          vehicleType: 'Car',
           vehicleModel: 'Maruti Suzuki Dzire',
           costPerSeat: '₹170',
           availableSeats: 3,
@@ -336,6 +344,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           id: `re-up-1-c`,
           hubId: `re-up-1`,
           hubName: 'Rajwada Hub',
+          dateGroup: 'today',
           routeFrom: corridor.from || 'Indore',
           routeTo: corridor.to || 'Khargone',
           lat: 22.7165,
@@ -344,6 +353,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           departureTime: 'Today · 10:30 AM',
           driverName: 'Priya Singh',
           driverRating: '4.92',
+          vehicleType: 'Car',
           vehicleModel: 'WagonR (AC)',
           costPerSeat: '₹160',
           availableSeats: 4,
@@ -354,6 +364,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           id: `re-up-1-d`,
           hubId: `re-up-1`,
           hubName: 'Rajwada Hub',
+          dateGroup: 'today',
           routeFrom: corridor.from || 'Indore',
           routeTo: corridor.to || 'Khargone',
           lat: 22.7215,
@@ -362,6 +373,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           departureTime: 'Today · 11:00 AM',
           driverName: 'Vikas Gupta',
           driverRating: '4.88',
+          vehicleType: 'SUV',
           vehicleModel: 'Innova Crysta (AC)',
           costPerSeat: '₹220',
           availableSeats: 2,
@@ -376,6 +388,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
       clusterCount: 3,
       lat: 22.6900,
       lng: 75.8300,
+      dateGroup: 'today',
       hubName: 'Bhawarkua Station',
       currentLocation: 'Bhawarkua Station (3 Rides)',
       departureTime: 'Today · 12:30 PM onwards',
@@ -386,6 +399,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           id: `re-up-2-a`,
           hubId: `re-up-2`,
           hubName: 'Bhawarkua Station',
+          dateGroup: 'today',
           routeFrom: corridor.from || 'Indore',
           routeTo: corridor.to || 'Khargone',
           lat: 22.6900,
@@ -394,6 +408,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           departureTime: 'Today · 12:30 PM',
           driverName: 'Neha Verma',
           driverRating: '4.88',
+          vehicleType: 'Car',
           vehicleModel: 'Maruti Suzuki Baleno',
           costPerSeat: '₹150',
           availableSeats: 3,
@@ -404,6 +419,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           id: `re-up-2-b`,
           hubId: `re-up-2`,
           hubName: 'Bhawarkua Station',
+          dateGroup: 'today',
           routeFrom: corridor.from || 'Indore',
           routeTo: corridor.to || 'Khargone',
           lat: 22.6935,
@@ -412,6 +428,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           departureTime: 'Today · 01:00 PM',
           driverName: 'Deepak Mehta',
           driverRating: '4.91',
+          vehicleType: 'Car',
           vehicleModel: 'Hyundai Aura (AC)',
           costPerSeat: '₹160',
           availableSeats: 2,
@@ -422,6 +439,7 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           id: `re-up-2-c`,
           hubId: `re-up-2`,
           hubName: 'Bhawarkua Station',
+          dateGroup: 'today',
           routeFrom: corridor.from || 'Indore',
           routeTo: corridor.to || 'Khargone',
           lat: 22.6868,
@@ -430,10 +448,141 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           departureTime: 'Today · 01:30 PM',
           driverName: 'Pooja Joshi',
           driverRating: '4.82',
+          vehicleType: 'Car',
           vehicleModel: 'Hyundai i20',
           costPerSeat: '₹140',
           availableSeats: 1,
           driverAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+          status: 'upcoming',
+        },
+      ]
+    },
+    {
+      id: `re-up-3`,
+      isCluster: true,
+      clusterCount: 2,
+      lat: 22.7533,
+      lng: 75.8937,
+      dateGroup: 'tomorrow',
+      hubName: 'Vijay Nagar Square',
+      currentLocation: 'Vijay Nagar Hub (2 Tomorrow Rides)',
+      departureTime: 'Tomorrow · 08:30 AM onwards',
+      costPerSeat: '₹175 - ₹190',
+      status: 'upcoming',
+      subRides: [
+        {
+          id: `re-up-3-a`,
+          hubId: `re-up-3`,
+          hubName: 'Vijay Nagar Hub',
+          dateGroup: 'tomorrow',
+          routeFrom: corridor.from || 'Indore',
+          routeTo: corridor.to || 'Khargone',
+          lat: 22.7533,
+          lng: 75.8937,
+          currentLocation: 'Vijay Nagar Square · Apollo DB City Gate',
+          departureTime: 'Tomorrow · 08:30 AM',
+          driverName: 'Manish Rawat',
+          driverRating: '4.94',
+          vehicleType: 'Car',
+          vehicleModel: 'Honda City (AC)',
+          costPerSeat: '₹190',
+          availableSeats: 2,
+          driverAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+          status: 'upcoming',
+        },
+        {
+          id: `re-up-3-b`,
+          hubId: `re-up-3`,
+          hubName: 'Vijay Nagar Hub',
+          dateGroup: 'tomorrow',
+          routeFrom: corridor.from || 'Indore',
+          routeTo: corridor.to || 'Khargone',
+          lat: 22.7560,
+          lng: 75.8970,
+          currentLocation: 'Vijay Nagar Hub · C21 Mall Stand',
+          departureTime: 'Tomorrow · 09:00 AM',
+          driverName: 'Ankit Sharma',
+          driverRating: '4.86',
+          vehicleType: 'Car',
+          vehicleModel: 'Maruti Suzuki Dzire',
+          costPerSeat: '₹175',
+          availableSeats: 3,
+          driverAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+          status: 'upcoming',
+        },
+      ]
+    },
+    {
+      id: `re-up-4`,
+      isCluster: true,
+      clusterCount: 3,
+      lat: 22.7180,
+      lng: 75.8780,
+      dateGroup: 'week',
+      hubName: 'Geeta Bhawan Square',
+      currentLocation: 'Geeta Bhawan Hub (3 Weekend Rides)',
+      departureTime: 'Fri, 4 Sep · 05:00 PM onwards',
+      costPerSeat: '₹170 - ₹185',
+      status: 'upcoming',
+      subRides: [
+        {
+          id: `re-up-4-a`,
+          hubId: `re-up-4`,
+          hubName: 'Geeta Bhawan Hub',
+          dateGroup: 'week',
+          routeFrom: corridor.from || 'Indore',
+          routeTo: corridor.to || 'Khargone',
+          lat: 22.7180,
+          lng: 75.8780,
+          currentLocation: 'Geeta Bhawan Square · Hospital Stand',
+          departureTime: 'Fri, 4 Sep · 05:00 PM',
+          driverName: 'Karan Patel',
+          driverRating: '4.89',
+          vehicleType: 'Car',
+          vehicleModel: 'Hyundai Verna (AC)',
+          costPerSeat: '₹180',
+          availableSeats: 2,
+          driverAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+          status: 'upcoming',
+        },
+        {
+          id: `re-up-4-b`,
+          hubId: `re-up-4`,
+          hubName: 'Geeta Bhawan Hub',
+          dateGroup: 'week',
+          routeFrom: corridor.from || 'Indore',
+          routeTo: corridor.to || 'Khargone',
+          lat: 22.7205,
+          lng: 75.8812,
+          currentLocation: 'Geeta Bhawan Hub · ABL Square',
+          departureTime: 'Fri, 4 Sep · 05:30 PM',
+          driverName: 'Surbhi Jain',
+          driverRating: '4.93',
+          vehicleType: 'SUV',
+          vehicleModel: 'Tata Nexon EV (AC)',
+          costPerSeat: '₹185',
+          availableSeats: 3,
+          driverAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+          status: 'upcoming',
+        },
+        {
+          id: `re-up-4-c`,
+          hubId: `re-up-4`,
+          hubName: 'Geeta Bhawan Hub',
+          dateGroup: 'week',
+          routeFrom: corridor.from || 'Indore',
+          routeTo: corridor.to || 'Khargone',
+          lat: 22.7152,
+          lng: 75.8745,
+          currentLocation: 'Geeta Bhawan Hub · White Church Road',
+          departureTime: 'Fri, 4 Sep · 06:00 PM',
+          driverName: 'Rohit Verma',
+          driverRating: '4.80',
+          vehicleType: 'SUV',
+          vehicleModel: 'Maruti Suzuki Brezza',
+          costPerSeat: '₹170',
+          availableSeats: 1,
+          driverAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=200',
           status: 'upcoming',
         },
       ]
@@ -460,11 +609,19 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     },
   ];
 
+  // Filter Upcoming Rides based on Date Filter
+  const filteredUpcomingRides = upcomingRides.filter((ride) => {
+    if (upcomingDateFilter === 'today') return ride.dateGroup === 'today';
+    if (upcomingDateFilter === 'tomorrow') return ride.dateGroup === 'tomorrow';
+    if (upcomingDateFilter === 'week') return true; // Show all 7 days
+    return ride.dateGroup === 'today' || ride.dateGroup === 'tomorrow'; // Default 'all' (Today & Tomorrow 90% primary focus)
+  });
+
   const currentRidesList =
     activeStatus === 'live'
       ? liveRides
       : activeStatus === 'upcoming'
-        ? upcomingRides
+        ? filteredUpcomingRides
         : completedRides;
 
   // Flatten all rides (including sub-rides inside clusters) for easy detail lookup
@@ -481,14 +638,12 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
   const currentHubRides = currentHubObj ? currentHubObj.subRides : [];
   const currentHubIndex = currentHubRides.findIndex((r) => r.id === selectedRide?.id);
 
-  // Cluster Click Handler - Zoom In & Spiderfy/Uncluster Sub-Rides
+  // Cluster Click Handler - Zoom In & Spiderfy/Uncluster Sub-Rides (Task 2: No card auto-selected by default)
   const handleClusterClick = (clusterRide) => {
     setExpandedClusterId(clusterRide.id);
     setMapCenterPos([clusterRide.lat, clusterRide.lng]);
     setMapZoom(13.5);
-    if (clusterRide.subRides && clusterRide.subRides.length > 0) {
-      setSelectedRideId(clusterRide.subRides[0].id);
-    }
+    setSelectedRideId(null); // Keep all sub-pins expanded on map with mini tags, user can tap any pin to open details
   };
 
   // Distinct Live Vehicle & Cluster Pin Marker
@@ -1030,6 +1185,95 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           </button>
         </div>
 
+        {/* Date Filter Bar (Shown ONLY when Upcoming Tab is active) */}
+        {activeStatus === 'upcoming' && (
+          <div
+            style={{
+              backgroundColor: '#0F172A',
+              padding: '0.4rem 1rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '0.5rem',
+              borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+              zIndex: 2000,
+            }}
+          >
+            {/* Left: Default 2 Days (Today & Tomorrow) Button */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <span style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: '0.15rem' }}>
+                Filter:
+              </span>
+              <button
+                onClick={() => {
+                  setUpcomingDateFilter('all');
+                  setCustomSelectedDate('');
+                  setSelectedRideId(null);
+                  setExpandedClusterId(null);
+                }}
+                style={{
+                  padding: '0.25rem 0.75rem',
+                  borderRadius: '14px',
+                  border: upcomingDateFilter === 'all' ? '1px solid #FBBF24' : '1px solid transparent',
+                  backgroundColor: upcomingDateFilter === 'all' ? '#E6A700' : 'rgba(255, 255, 255, 0.08)',
+                  color: upcomingDateFilter === 'all' ? '#111827' : '#CBD5E1',
+                  fontSize: '0.725rem',
+                  fontWeight: '800',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.2s ease',
+                }}
+              >
+                ✨ Today & Tomorrow (Default)
+              </button>
+            </div>
+
+            {/* Right: Small Compact Button with Date Calendar Icon */}
+            <label
+              style={{
+                padding: '0.25rem 0.75rem',
+                borderRadius: '14px',
+                border: upcomingDateFilter === 'custom' ? '1px solid #FBBF24' : '1px solid rgba(255, 255, 255, 0.18)',
+                backgroundColor: upcomingDateFilter === 'custom' ? '#D97706' : 'rgba(255, 255, 255, 0.08)',
+                color: upcomingDateFilter === 'custom' ? '#FFFFFF' : '#CBD5E1',
+                fontSize: '0.725rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                position: 'relative',
+                whiteSpace: 'nowrap',
+                transition: 'all 0.2s ease',
+              }}
+              title="Select Departure Date"
+            >
+              <Calendar size={13} style={{ color: upcomingDateFilter === 'custom' ? '#FFFFFF' : '#FBBF24' }} />
+              <span>{customSelectedDate ? customSelectedDate : 'Select Date'}</span>
+              <input
+                type="date"
+                onChange={(e) => {
+                  if (e.target.value) {
+                    setCustomSelectedDate(e.target.value);
+                    setUpcomingDateFilter('custom');
+                    setSelectedRideId(null);
+                    setExpandedClusterId(null);
+                  }
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  opacity: 0,
+                  cursor: 'pointer',
+                }}
+              />
+            </label>
+          </div>
+        )}
+
         {/* 3. HERO MAP VIEWPORT CANVAS */}
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
@@ -1367,8 +1611,8 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                         alignItems: 'center',
                         gap: '0.35rem',
                         padding: '0.25rem 0.65rem',
-                        backgroundColor: activeStatus === 'live' ? '#E6F4EA' : activeStatus === 'upcoming' ? '#FFF4CC' : '#F3F4F6',
-                        color: activeStatus === 'live' ? '#137333' : activeStatus === 'upcoming' ? '#C98F00' : '#4B5563',
+                        backgroundColor: activeStatus === 'live' ? '#E6F4EA' : selectedRide.dateGroup === 'tomorrow' ? '#EFF6FF' : selectedRide.dateGroup === 'week' ? '#F1F5F9' : activeStatus === 'upcoming' ? '#FFF4CC' : '#F3F4F6',
+                        color: activeStatus === 'live' ? '#137333' : selectedRide.dateGroup === 'tomorrow' ? '#1D4ED8' : selectedRide.dateGroup === 'week' ? '#334155' : activeStatus === 'upcoming' ? '#C98F00' : '#4B5563',
                         borderRadius: '20px',
                         fontSize: '0.7rem',
                         fontWeight: '800',
@@ -1379,16 +1623,20 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                           width: '6px',
                           height: '6px',
                           borderRadius: '50%',
-                          backgroundColor: activeStatus === 'live' ? '#10B981' : activeStatus === 'upcoming' ? '#E6A700' : '#6B7280',
+                          backgroundColor: activeStatus === 'live' ? '#10B981' : selectedRide.dateGroup === 'tomorrow' ? '#2563EB' : selectedRide.dateGroup === 'week' ? '#64748B' : activeStatus === 'upcoming' ? '#E6A700' : '#6B7280',
                           display: 'inline-block',
                         }}
                       />
                       <span>
                         {activeStatus === 'live'
                           ? '🟢 LIVE ON ROUTE'
-                          : activeStatus === 'upcoming'
-                            ? '🟡 UPCOMING DEPARTURE'
-                            : '⚪ PAST TRIP'}
+                          : selectedRide.dateGroup === 'tomorrow'
+                            ? '🔵 TOMORROW DEPARTURE'
+                            : selectedRide.dateGroup === 'week'
+                              ? '📅 WEEKEND / UPCOMING'
+                              : activeStatus === 'upcoming'
+                                ? '🟡 TODAY DEPARTURE'
+                                : '⚪ PAST TRIP'}
                       </span>
                     </div>
 
@@ -1484,14 +1732,31 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
                   <div style={{ fontWeight: '800', fontSize: '0.95rem', color: '#111827', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     {selectedRide.driverName}
                     <ShieldCheck size={16} style={{ color: '#E6A700' }} />
+                    <span
+                      style={{
+                        backgroundColor: selectedRide.vehicleType === 'Bike' ? '#FEF2F2' : selectedRide.vehicleType === 'SUV' ? '#EFF6FF' : '#FEF3C7',
+                        color: selectedRide.vehicleType === 'Bike' ? '#DC2626' : selectedRide.vehicleType === 'SUV' ? '#1D4ED8' : '#B45309',
+                        padding: '1.5px 7.5px',
+                        borderRadius: '8px',
+                        fontSize: '0.675rem',
+                        fontWeight: '800',
+                        border: selectedRide.vehicleType === 'Bike' ? '1px solid #FECACA' : selectedRide.vehicleType === 'SUV' ? '1px solid #BFDBFE' : '1px solid #FDE68A',
+                        marginLeft: '0.2rem',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                      }}
+                    >
+                      {selectedRide.vehicleType === 'Bike' ? '🏍️ Bike' : selectedRide.vehicleType === 'SUV' ? '🚙 SUV' : '🚗 Car'}
+                    </span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '2px' }}>
                     <Star size={12} fill="#E6A700" style={{ color: '#E6A700' }} />
                     <span>{selectedRide.driverRating}</span>
                     <span>•</span>
                     <span>Verified</span>
                     <span>•</span>
-                    <span>{selectedRide.vehicleModel}</span>
+                    <strong style={{ color: '#374151' }}>{selectedRide.vehicleModel}</strong>
                   </div>
                 </div>
               </div>

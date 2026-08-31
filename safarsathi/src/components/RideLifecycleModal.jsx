@@ -128,20 +128,35 @@ export default function RideLifecycleModal({
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '640px', borderRadius: '24px' }}>
+    <div className="modal-overlay" onClick={onClose} style={{ padding: 0, zIndex: 9999 }}>
+      <div
+        className="modal-content"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100vw',
+          height: '100vh',
+          maxWidth: '100vw',
+          maxHeight: '100vh',
+          borderRadius: 0,
+          padding: 0,
+          backgroundColor: '#FFFFFF',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
         
         {/* Modal Top Header Bar */}
         <div
           style={{
-            padding: '1.25rem 1.5rem',
+            padding: '1.1rem 1.5rem',
             background: 'linear-gradient(135deg, #E6A700 0%, #C98F00 100%)',
             color: '#111827',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderTopLeftRadius: '24px',
-            borderTopRightRadius: '24px',
+            borderRadius: 0,
+            zIndex: 10,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -234,7 +249,7 @@ export default function RideLifecycleModal({
         </div>
 
         {/* Modal Body Content */}
-        <div style={{ padding: '1.5rem' }}>
+        <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto', maxWidth: '760px', margin: '0 auto', width: '100%' }}>
 
           {/* 1. PASSENGER VIEW */}
           {activeRole === 'passenger' && (
