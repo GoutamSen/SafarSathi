@@ -33,6 +33,7 @@ import L from 'leaflet';
    LIVE GOOGLE MAP GPS TRACKING SUB-COMPONENT (Uber/Rapido Style)
 ==================================================================== */
 function LiveMapTrackingView({ journey }) {
+  const [isFullScreen, setIsFullScreen] = useState(false);
   const fromName = journey?.routeFrom || 'Indore';
   const toName = journey?.routeTo || 'Khargone';
 
@@ -61,12 +62,33 @@ function LiveMapTrackingView({ journey }) {
     iconAnchor: [80, 18]
   });
 
+  const containerStyle = isFullScreen
+    ? {
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        zIndex: 999999,
+        borderRadius: 0,
+        margin: 0,
+        backgroundColor: '#111827',
+      }
+    : {
+        position: 'relative',
+        borderRadius: '18px',
+        overflow: 'hidden',
+        border: '2px solid #E6A700',
+        marginBottom: '1.25rem',
+        height: '240px',
+      };
+
   return (
-    <div style={{ position: 'relative', borderRadius: '18px', overflow: 'hidden', border: '2px solid #E6A700', marginBottom: '1.25rem', height: '230px' }}>
+    <div style={containerStyle}>
       <MapContainer
         center={[22.27, 75.73]}
-        zoom={9}
-        scrollWheelZoom={false}
+        zoom={isFullScreen ? 10 : 9}
+        scrollWheelZoom={true}
         dragging={true}
         style={{ width: '100%', height: '100%' }}
       >
@@ -77,7 +99,7 @@ function LiveMapTrackingView({ journey }) {
         <Polyline
           positions={[startCoords, currentVehicleCoords, endCoords]}
           color="#E6A700"
-          weight={5}
+          weight={6}
         />
         <Marker position={startCoords} icon={startPin} />
         <Marker position={currentVehicleCoords} icon={vehiclePin} />
@@ -87,27 +109,93 @@ function LiveMapTrackingView({ journey }) {
       {/* Floating GPS HUD Overlay */}
       <div style={{
         position: 'absolute',
-        top: '10px',
-        left: '10px',
-        right: '10px',
+        top: isFullScreen ? '16px' : '10px',
+        left: isFullScreen ? '16px' : '10px',
+        right: isFullScreen ? '16px' : '10px',
         zIndex: 1000,
         backgroundColor: 'rgba(17, 24, 39, 0.92)',
-        backdropFilter: 'blur(8px)',
+        backdropFilter: 'blur(10px)',
         color: '#FFFFFF',
-        borderRadius: '12px',
-        padding: '0.5rem 0.85rem',
+        borderRadius: '14px',
+        padding: '0.65rem 1rem',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         border: '1px solid rgba(230, 167, 0, 0.4)',
-        fontSize: '0.8rem',
+        fontSize: '0.825rem',
+        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800', color: '#E6A700' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '800', color: '#E6A700' }}>
           <span className="pulse-indicator" style={{ backgroundColor: '#22C55E' }} />
           <span>LIVE HIGHWAY GPS TRACKING</span>
+          {isFullScreen && <span style={{ color: '#9CA3AF', fontWeight: '600' }}>• 18 km to {toName}</span>}
         </div>
-        <span style={{ fontWeight: '700', color: '#FFFFFF' }}>ETA: 8 mins</span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <span style={{ fontWeight: '800', color: '#FFFFFF', fontSize: '0.85rem' }}>ETA: 8 mins</span>
+          <button
+            type="button"
+            onClick={() => setIsFullScreen(!isFullScreen)}
+            style={{
+              padding: '0.35rem 0.75rem',
+              borderRadius: '8px',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              backgroundColor: isFullScreen ? '#E6A700' : 'rgba(255, 255, 255, 0.15)',
+              color: isFullScreen ? '#111827' : '#FFFFFF',
+              fontWeight: '800',
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+            }}
+          >
+            {isFullScreen ? '🗗 Exit Fullscreen' : '⛶ Fullscreen'}
+          </button>
+        </div>
       </div>
+
+      {/* Floating Bottom HUD Card for Fullscreen Mode */}
+      {isFullScreen && (
+        <div style={{
+          position: 'absolute',
+          bottom: '20px',
+          left: '16px',
+          right: '16px',
+          zIndex: 1000,
+          backgroundColor: '#111827',
+          color: '#FFFFFF',
+          borderRadius: '16px',
+          padding: '1rem 1.25rem',
+          border: '1.5px solid #E6A700',
+          boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}>
+          <div>
+            <div style={{ fontSize: '0.75rem', color: '#E6A700', fontWeight: '800', marginBottom: '0.2rem' }}>
+              EN-ROUTE LIVE DRIVING DASHBOARD
+            </div>
+            <h4 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, color: '#FFFFFF' }}>
+              {fromName} ➔ {toName} (78% Completed)
+            </h4>
+            <div style={{ fontSize: '0.8rem', color: '#9CA3AF', marginTop: '0.2rem' }}>
+              Speed: <strong>72 km/h</strong> • Remaining: <strong>18 km (8 Mins)</strong>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsFullScreen(false)}
+            className="btn btn-primary"
+            style={{ padding: '0.6rem 1.1rem', fontSize: '0.85rem' }}
+          >
+            🗗 Back to Controls
+          </button>
+        </div>
+      )}
     </div>
   );
 }
