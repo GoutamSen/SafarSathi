@@ -48,7 +48,7 @@ export function JourneyDetailModal({ journey, onClose, onBookingConfirmed }) {
         pickupPoint: pickupPoint,
         totalFare: totalFare,
         requestedSeats: requestedSeats,
-        bookingStatus: 'BOOKING_CONFIRMED',
+        bookingStatus: 'REQUEST_PENDING',
         departureTime: journey.departureTime || 'Today, 08:30 AM',
       };
 
@@ -60,25 +60,40 @@ export function JourneyDetailModal({ journey, onClose, onBookingConfirmed }) {
   };
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '580px', borderRadius: '24px' }}>
+    <div className="modal-overlay" onClick={onClose} style={{ padding: 0, zIndex: 9999 }}>
+      <div
+        className="modal-content"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100vw',
+          height: '100vh',
+          maxWidth: '100vw',
+          maxHeight: '100vh',
+          borderRadius: 0,
+          padding: 0,
+          backgroundColor: '#FFFFFF',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
         
         {/* Modal Header */}
         <div
           style={{
-            padding: '1.25rem 1.5rem',
+            padding: '1.1rem 1.5rem',
             background: 'linear-gradient(135deg, #E6A700 0%, #C98F00 100%)',
             color: '#111827',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderTopLeftRadius: '24px',
-            borderTopRightRadius: '24px',
+            borderRadius: 0,
+            zIndex: 10,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Navigation size={18} />
-            <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#111827' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Navigation size={20} />
+            <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#111827', margin: 0 }}>
               Confirm Seat Request
             </h3>
           </div>
@@ -89,8 +104,8 @@ export function JourneyDetailModal({ journey, onClose, onBookingConfirmed }) {
               background: 'rgba(255, 255, 255, 0.3)',
               border: 'none',
               borderRadius: '50%',
-              width: '32px',
-              height: '32px',
+              width: '34px',
+              height: '34px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -102,8 +117,8 @@ export function JourneyDetailModal({ journey, onClose, onBookingConfirmed }) {
           </button>
         </div>
 
-        {/* Modal Body */}
-        <div style={{ padding: '1.5rem' }}>
+        {/* Modal Body - Full Height Scrollable Container */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 1.25rem', maxWidth: '680px', margin: '0 auto', width: '100%' }}>
           
           {/* Route Summary Box */}
           <div
@@ -236,16 +251,48 @@ export function JourneyDetailModal({ journey, onClose, onBookingConfirmed }) {
 }
 
 /* ===================================================
-   2. OFFER RIDE MODAL
+   2. OFFER RIDE MODAL (Full Screen + GPS + Calendar Picker)
 =================================================== */
 export function OfferRideModal({ onClose, onPublishJourney }) {
   const [routeFrom, setRouteFrom] = useState('Indore');
   const [routeTo, setRouteTo] = useState('Khargone');
-  const [availableSeats, setAvailableSeats] = useState(3);
-  const [costPerSeat, setCostPerSeat] = useState('160');
-  const [vehicleModel, setVehicleModel] = useState('Tata Nexon EV');
-  const [vehicleType, setVehicleType] = useState('Car');
+  const [departureDate, setDepartureDate] = useState(new Date().toISOString().split('T')[0]);
+  const [departureTime, setDepartureTime] = useState('05:30 PM');
+  const [vehicleType, setVehicleType] = useState('SUV');
+  const [vehicleModel, setVehicleModel] = useState('Hyundai Creta');
+  const [availableSeats, setAvailableSeats] = useState(4);
+  const [costPerSeat, setCostPerSeat] = useState('180');
+  const [tripNote, setTripNote] = useState('AC Available • Premium SUV • Spacious Luggage');
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isGpsLoading, setIsGpsLoading] = useState(false);
+
+  const handleVehicleTypeChange = (newType) => {
+    setVehicleType(newType);
+    if (newType === 'Bike') {
+      setVehicleModel('Royal Enfield Hunter 350');
+      setAvailableSeats(1);
+      setCostPerSeat('60');
+      setTripNote('Helmet Provided • Quick Ride • No Traffic Delay');
+    } else if (newType === 'Car') {
+      setVehicleModel('Swift Dzire');
+      setAvailableSeats(3);
+      setCostPerSeat('160');
+      setTripNote('AC Available • Verified Host • Luggage Space');
+    } else if (newType === 'SUV') {
+      setVehicleModel('Hyundai Creta');
+      setAvailableSeats(4);
+      setCostPerSeat('180');
+      setTripNote('AC Available • Premium SUV • Spacious Luggage');
+    }
+  };
+
+  const handleUseCurrentLocation = () => {
+    setIsGpsLoading(true);
+    setTimeout(() => {
+      setIsGpsLoading(false);
+      setRouteFrom('Indore (Current GPS Location)');
+    }, 400);
+  };
 
   const handlePublish = (e) => {
     e.preventDefault();
@@ -253,26 +300,32 @@ export function OfferRideModal({ onClose, onPublishJourney }) {
 
     setTimeout(() => {
       setIsPublishing(false);
+      const formattedDateStr = new Date(departureDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const newJourneyObj = {
         id: `published-${Date.now()}`,
         isLive: true,
         isUserPublished: true,
         routeFrom: routeFrom,
         routeTo: routeTo,
+        hubName: 'Vijay Nagar Hub',
         currentLocation: `${routeFrom} Vijay Nagar Circle`,
         etaPickup: 'Live Now',
-        availableSeats: parseInt(availableSeats) || 3,
-        totalSeats: 4,
+        availableSeats: parseInt(availableSeats) || (vehicleType === 'Bike' ? 1 : 3),
+        totalSeats: vehicleType === 'Bike' ? 1 : 4,
         vehicleType: vehicleType,
         vehicleModel: vehicleModel,
         driverName: 'You (Verified Host)',
         driverAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
-        driverRating: '5.0',
-        driverTrips: 'New Host',
+        driverRating: '5.0 ★ New Host',
+        driverTrips: 'Verified Host',
         isVerified: true,
         costPerSeat: `₹${costPerSeat}`,
-        departureTime: 'Leaving in 10 mins',
-        estimatedTotalTime: '1 hr 45 mins',
+        departureTime: `${formattedDateStr} · ${departureTime}`,
+        dateGroup: 'today',
+        estimatedTotalTime: vehicleType === 'Bike' ? '1 hr 30 mins' : '1 hr 45 mins',
+        lat: 22.7196 + (Math.random() - 0.5) * 0.02,
+        lng: 75.8577 + (Math.random() - 0.5) * 0.02,
+        status: 'upcoming',
       };
 
       if (onPublishJourney) {
@@ -282,27 +335,44 @@ export function OfferRideModal({ onClose, onPublishJourney }) {
     }, 600);
   };
 
+  const totalEarningsPreview = (parseInt(availableSeats) || 1) * (parseInt(costPerSeat) || 0);
+
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '560px', borderRadius: '24px' }}>
+    <div className="modal-overlay" onClick={onClose} style={{ padding: 0, zIndex: 9999 }}>
+      <div
+        className="modal-content"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100vw',
+          height: '100vh',
+          maxWidth: '100vw',
+          maxHeight: '100vh',
+          borderRadius: 0,
+          padding: 0,
+          backgroundColor: '#FFFFFF',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
         
         {/* Header */}
         <div
           style={{
-            padding: '1.25rem 1.5rem',
+            padding: '1.1rem 1.5rem',
             background: 'linear-gradient(135deg, #E6A700 0%, #C98F00 100%)',
             color: '#111827',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            borderTopLeftRadius: '24px',
-            borderTopRightRadius: '24px',
+            borderRadius: 0,
+            zIndex: 10,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Car size={18} />
-            <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#111827' }}>
-              Publish Your Journey Route
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Car size={20} />
+            <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: '#111827', margin: 0 }}>
+              Publish Your Journey Route (Driver Host)
             </h3>
           </div>
 
@@ -312,8 +382,8 @@ export function OfferRideModal({ onClose, onPublishJourney }) {
               background: 'rgba(255, 255, 255, 0.3)',
               border: 'none',
               borderRadius: '50%',
-              width: '32px',
-              height: '32px',
+              width: '34px',
+              height: '34px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -325,16 +395,36 @@ export function OfferRideModal({ onClose, onPublishJourney }) {
           </button>
         </div>
 
-        {/* Form Body */}
-        <div style={{ padding: '1.5rem' }}>
+        {/* Form Body - Full Height Scrollable Container */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem 1.25rem', maxWidth: '680px', margin: '0 auto', width: '100%' }}>
           <form onSubmit={handlePublish}>
             
-            {/* Route Inputs */}
+            {/* Route Inputs (From & To) */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.15rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#374151', marginBottom: '0.3rem' }}>
-                  Departure City (From)
-                </label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.3rem' }}>
+                  <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#374151' }}>
+                    Departure City (From)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentLocation}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#D97706',
+                      fontSize: '0.725rem',
+                      fontWeight: '800',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '3px',
+                      padding: 0,
+                    }}
+                  >
+                    🎯 {isGpsLoading ? 'Locating...' : 'Use Current GPS'}
+                  </button>
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 0.85rem', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px' }}>
                   <MapPin size={15} style={{ color: '#E6A700' }} />
                   <input
@@ -349,7 +439,7 @@ export function OfferRideModal({ onClose, onPublishJourney }) {
 
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#374151', marginBottom: '0.3rem' }}>
-                  Destination (To)
+                  Destination City (To)
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 0.85rem', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px' }}>
                   <MapPin size={15} style={{ color: '#E6A700' }} />
@@ -364,7 +454,44 @@ export function OfferRideModal({ onClose, onPublishJourney }) {
               </div>
             </div>
 
-            {/* Vehicle Type & Model */}
+            {/* Calendar Date Picker & Time */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.15rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#374151', marginBottom: '0.3rem' }}>
+                  Departure Date (Calendar Select)
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 0.85rem', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px' }}>
+                  <Calendar size={15} style={{ color: '#E6A700' }} />
+                  <input
+                    type="date"
+                    value={departureDate}
+                    onChange={(e) => setDepartureDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    required
+                    style={{ width: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.875rem', fontWeight: '700', color: '#111827' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#374151', marginBottom: '0.3rem' }}>
+                  Departure Time
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.7rem 0.85rem', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px' }}>
+                  <Clock size={15} style={{ color: '#E6A700' }} />
+                  <input
+                    type="text"
+                    value={departureTime}
+                    onChange={(e) => setDepartureTime(e.target.value)}
+                    placeholder="e.g. 05:30 PM"
+                    required
+                    style={{ width: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.875rem', fontWeight: '700', color: '#111827' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Vehicle Type & Model (Dynamic logic for Bike vs Car vs SUV) */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '1rem', marginBottom: '1.15rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#374151', marginBottom: '0.3rem' }}>
@@ -372,10 +499,11 @@ export function OfferRideModal({ onClose, onPublishJourney }) {
                 </label>
                 <select
                   value={vehicleType}
-                  onChange={(e) => setVehicleType(e.target.value)}
+                  onChange={(e) => handleVehicleTypeChange(e.target.value)}
                   style={{ width: '100%', padding: '0.7rem 0.85rem', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', fontSize: '0.875rem', fontWeight: '700', color: '#111827', outline: 'none' }}
                 >
                   <option value="Car">🚗 Car</option>
+                  <option value="SUV">🚙 SUV</option>
                   <option value="Bike">🏍️ Bike</option>
                 </select>
               </div>
@@ -388,7 +516,7 @@ export function OfferRideModal({ onClose, onPublishJourney }) {
                   type="text"
                   value={vehicleModel}
                   onChange={(e) => setVehicleModel(e.target.value)}
-                  placeholder="e.g. Tata Nexon EV, Swift Dzire"
+                  placeholder={vehicleType === 'Bike' ? 'e.g. Hunter 350, Pulsar' : 'e.g. Hyundai Creta, Baleno'}
                   required
                   style={{ width: '100%', padding: '0.7rem 0.85rem', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', fontSize: '0.875rem', fontWeight: '700', color: '#111827', outline: 'none' }}
                 />
@@ -396,15 +524,15 @@ export function OfferRideModal({ onClose, onPublishJourney }) {
             </div>
 
             {/* Seats & Cost Per Seat */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.15rem' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#374151', marginBottom: '0.3rem' }}>
-                  Available Seats
+                  {vehicleType === 'Bike' ? 'Rider Seat (Max 1)' : 'Available Seats'}
                 </label>
                 <input
                   type="number"
                   min="1"
-                  max="6"
+                  max={vehicleType === 'Bike' ? 1 : 6}
                   value={availableSeats}
                   onChange={(e) => setAvailableSeats(e.target.value)}
                   required
@@ -425,6 +553,26 @@ export function OfferRideModal({ onClose, onPublishJourney }) {
                   style={{ width: '100%', padding: '0.7rem 0.85rem', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', fontSize: '0.875rem', fontWeight: '700', color: '#111827', outline: 'none' }}
                 />
               </div>
+            </div>
+
+            {/* Dynamic Trip Amenities & Driver Note based on Vehicle Type */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#374151', marginBottom: '0.3rem' }}>
+                {vehicleType === 'Bike' ? 'Bike Features & Rider Rules' : 'Car Amenities & Driver Note'}
+              </label>
+              <input
+                type="text"
+                value={tripNote}
+                onChange={(e) => setTripNote(e.target.value)}
+                placeholder={vehicleType === 'Bike' ? 'e.g. Helmet Provided • Quick Ride' : 'e.g. AC Available • Luggage Space'}
+                style={{ width: '100%', padding: '0.7rem 0.85rem', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', fontSize: '0.875rem', fontWeight: '600', color: '#111827', outline: 'none' }}
+              />
+            </div>
+
+            {/* Estimated Total Revenue Preview */}
+            <div style={{ padding: '0.85rem 1rem', backgroundColor: '#FFF4CC', borderRadius: '14px', border: '1px solid rgba(230, 167, 0, 0.3)', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#B45309' }}>Estimated Total Revenue ({availableSeats} Seats @ ₹{costPerSeat}):</span>
+              <span style={{ fontSize: '1.15rem', fontWeight: '900', color: '#B45309' }}>₹{totalEarningsPreview}</span>
             </div>
 
             <button

@@ -43,7 +43,7 @@ function MapAutoCenter({ center, zoom }) {
   return null;
 }
 
-export default function RouteExplorerModal({ corridor, onClose, onSelectJourney }) {
+export default function RouteExplorerModal({ corridor, publishedJourneys = [], onClose, onSelectJourney }) {
   if (!corridor) return null;
 
   const [activeStatus, setActiveStatus] = useState('live'); // 'live' | 'upcoming' | 'completed'
@@ -285,8 +285,29 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     },
   ];
 
+  // Convert user published rides into live map objects
+  const userPublishedRidesList = publishedJourneys.map((pj) => ({
+    id: pj.id,
+    routeFrom: pj.routeFrom || corridor.from || 'Indore',
+    routeTo: pj.routeTo || corridor.to || 'Khargone',
+    lat: pj.lat || 22.7210,
+    lng: pj.lng || 75.8580,
+    currentLocation: pj.currentLocation || 'Live Pickup Hub',
+    departureTime: pj.departureTime || 'Today · 05:30 PM',
+    dateGroup: pj.dateGroup || 'today',
+    driverName: pj.driverName || 'You (Verified Host)',
+    driverRating: pj.driverRating || '5.0 ★ New Host',
+    vehicleType: pj.vehicleType || 'SUV',
+    vehicleModel: pj.vehicleModel || 'Hyundai Creta',
+    costPerSeat: pj.costPerSeat || '₹160',
+    availableSeats: pj.availableSeats || 3,
+    driverAvatar: pj.driverAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+    status: 'upcoming',
+  }));
+
   // 2. Upcoming Scheduled Rides (With Multi-Ride Cluster & Date Filter Support)
   const upcomingRides = [
+    ...userPublishedRidesList,
     {
       id: `re-up-1`,
       isCluster: true,

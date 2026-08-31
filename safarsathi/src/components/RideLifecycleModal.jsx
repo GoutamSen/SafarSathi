@@ -26,6 +26,91 @@ import {
   User,
   ExternalLink
 } from 'lucide-react';
+import { MapContainer, TileLayer, Polyline, Marker } from 'react-leaflet';
+import L from 'leaflet';
+
+/* ====================================================================
+   LIVE GOOGLE MAP GPS TRACKING SUB-COMPONENT (Uber/Rapido Style)
+==================================================================== */
+function LiveMapTrackingView({ journey }) {
+  const fromName = journey?.routeFrom || 'Indore';
+  const toName = journey?.routeTo || 'Khargone';
+
+  const startCoords = [22.7196, 75.8577]; // Indore
+  const endCoords = [21.8247, 75.6102];   // Khargone
+  const currentVehicleCoords = [22.1500, 75.6800]; // Live GPS location en-route
+
+  const startPin = L.divIcon({
+    className: 'custom-map-pin',
+    html: `<div style="background:#111827;color:#FFFFFF;padding:4px 8px;border-radius:10px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,0.3);border:1px solid #E6A700;">📍 ${fromName}</div>`,
+    iconSize: [80, 30],
+    iconAnchor: [40, 15]
+  });
+
+  const endPin = L.divIcon({
+    className: 'custom-map-pin',
+    html: `<div style="background:#15803D;color:#FFFFFF;padding:4px 8px;border-radius:10px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,0.3);border:1px solid #22C55E;">🏁 ${toName}</div>`,
+    iconSize: [90, 30],
+    iconAnchor: [45, 15]
+  });
+
+  const vehiclePin = L.divIcon({
+    className: 'custom-vehicle-pin',
+    html: `<div style="background:#E6A700;color:#111827;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 6px 16px rgba(230,167,0,0.7);display:flex;align-items:center;gap:4px;border:2px solid #FFFFFF;">🚗 Hyundai Creta (72 km/h)</div>`,
+    iconSize: [160, 36],
+    iconAnchor: [80, 18]
+  });
+
+  return (
+    <div style={{ position: 'relative', borderRadius: '18px', overflow: 'hidden', border: '2px solid #E6A700', marginBottom: '1.25rem', height: '230px' }}>
+      <MapContainer
+        center={[22.27, 75.73]}
+        zoom={9}
+        scrollWheelZoom={false}
+        dragging={true}
+        style={{ width: '100%', height: '100%' }}
+      >
+        <TileLayer
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; OpenStreetMap'
+        />
+        <Polyline
+          positions={[startCoords, currentVehicleCoords, endCoords]}
+          color="#E6A700"
+          weight={5}
+        />
+        <Marker position={startCoords} icon={startPin} />
+        <Marker position={currentVehicleCoords} icon={vehiclePin} />
+        <Marker position={endCoords} icon={endPin} />
+      </MapContainer>
+
+      {/* Floating GPS HUD Overlay */}
+      <div style={{
+        position: 'absolute',
+        top: '10px',
+        left: '10px',
+        right: '10px',
+        zIndex: 1000,
+        backgroundColor: 'rgba(17, 24, 39, 0.92)',
+        backdropFilter: 'blur(8px)',
+        color: '#FFFFFF',
+        borderRadius: '12px',
+        padding: '0.5rem 0.85rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        border: '1px solid rgba(230, 167, 0, 0.4)',
+        fontSize: '0.8rem',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: '800', color: '#E6A700' }}>
+          <span className="pulse-indicator" style={{ backgroundColor: '#22C55E' }} />
+          <span>LIVE HIGHWAY GPS TRACKING</span>
+        </div>
+        <span style={{ fontWeight: '700', color: '#FFFFFF' }}>ETA: 8 mins</span>
+      </div>
+    </div>
+  );
+}
 
 /* ====================================================================
    LIFECYCLE ENGINE STATES (21-State Real-Time Engine)
@@ -86,7 +171,7 @@ export default function RideLifecycleModal({
     e.preventDefault();
     if (enteredOtp === generatedOtp || enteredOtp === '4829') {
       setOtpError('');
-      setCurrentStep(RIDE_STATUS.CHECKLIST_VERIFIED);
+      setCurrentStep(RIDE_STATUS.TRIP_STARTED);
     } else {
       setOtpError('❌ Incorrect OTP code! Please check passenger pass.');
     }
@@ -304,18 +389,20 @@ export default function RideLifecycleModal({
                 </div>
               </div>
 
-              {/* OTP Pass Box */}
-              <div style={{ backgroundColor: '#FFF4CC', borderRadius: '18px', padding: '1.25rem', border: '1.5px solid #E6A700', textAlign: 'center', marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.8rem', color: '#C98F00', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>
-                  YOUR 4-DIGIT PICKUP START OTP
+              {/* OTP Pass Box - Only revealed after Passenger clicks "Verify Vehicle & Board Ride ➔" */}
+              {(currentStep === RIDE_STATUS.CHECKLIST_VERIFIED || currentStep === RIDE_STATUS.TRIP_STARTED) && (
+                <div style={{ backgroundColor: '#FFF4CC', borderRadius: '18px', padding: '1.25rem', border: '1.5px solid #E6A700', textAlign: 'center', marginBottom: '1.5rem' }}>
+                  <div style={{ fontSize: '0.8rem', color: '#C98F00', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.35rem' }}>
+                    YOUR 4-DIGIT PICKUP START OTP
+                  </div>
+                  <div style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '0.25em', color: '#111827', fontFamily: 'monospace' }}>
+                    {generatedOtp}
+                  </div>
+                  <span style={{ fontSize: '0.775rem', color: '#4B5563' }}>
+                    Share this OTP with driver host {journey.driverName} upon boarding.
+                  </span>
                 </div>
-                <div style={{ fontSize: '2.5rem', fontWeight: '800', letterSpacing: '0.25em', color: '#111827', fontFamily: 'monospace' }}>
-                  {generatedOtp}
-                </div>
-                <span style={{ fontSize: '0.775rem', color: '#4B5563' }}>
-                  Share this OTP with driver host {journey.driverName} upon boarding.
-                </span>
-              </div>
+              )}
 
               {/* Step Flow Controls */}
               {currentStep === RIDE_STATUS.DRIVER_ACCEPTED && (
@@ -329,21 +416,24 @@ export default function RideLifecycleModal({
               )}
 
               {currentStep === RIDE_STATUS.CHECKLIST_VERIFIED && (
-                <button
-                  onClick={() => setCurrentStep(RIDE_STATUS.TRIP_STARTED)}
-                  className="btn btn-primary btn-shine"
-                  style={{ width: '100%', padding: '0.9rem' }}
-                >
-                  Start Journey ➔
-                </button>
+                <div style={{ textAlign: 'center', backgroundColor: '#F3F4F6', padding: '0.85rem 1.15rem', borderRadius: '14px', border: '1px dashed #D1D5DB' }}>
+                  <span style={{ fontSize: '0.85rem', color: '#374151', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem' }}>
+                    <span className="pulse-indicator" style={{ backgroundColor: '#E6A700' }} />
+                    ⏳ Waiting for Driver Host to verify OTP upon boarding...
+                  </span>
+                </div>
               )}
 
               {currentStep === RIDE_STATUS.TRIP_STARTED && (
                 <div style={{ textAlign: 'center' }}>
                   <div className="badge-pill badge-green" style={{ fontSize: '0.9rem', marginBottom: '1rem', padding: '0.5rem 1.25rem' }}>
                     <span className="pulse-indicator" />
-                    <span>EN ROUTE ON HIGHWAY</span>
+                    <span>🟢 EN ROUTE ON HIGHWAY (LIVE GPS)</span>
                   </div>
+
+                  {/* Real-time Uber/Rapido Style Live Google Map GPS View */}
+                  <LiveMapTrackingView journey={journey} />
+
                   <button
                     onClick={() => setCurrentStep(RIDE_STATUS.PAYMENT_PENDING)}
                     className="btn btn-primary btn-shine"
@@ -356,9 +446,18 @@ export default function RideLifecycleModal({
 
               {currentStep === RIDE_STATUS.PAYMENT_PENDING && (
                 <div style={{ backgroundColor: '#FFFFFF', borderRadius: '18px', padding: '1.25rem', border: '1px solid #E5E7EB' }}>
-                  <h4 style={{ fontSize: '1.1rem', fontWeight: '800', marginBottom: '1rem', color: '#111827' }}>
-                    Select Payment Method
-                  </h4>
+                  <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                    <div className="badge-pill badge-green" style={{ fontSize: '0.8rem', marginBottom: '0.5rem' }}>
+                      🏁 DESTINATION ARRIVED
+                    </div>
+                    <h4 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#111827', margin: 0 }}>
+                      Pay Expense Share to Driver
+                    </h4>
+                    <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>
+                      Pay directly to host {journey.driverName} for your 1 seat share.
+                    </span>
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', marginBottom: '1.25rem' }}>
                     {['UPI / GPay / PhonePe', 'Cash directly to Host', 'Credit / Debit Card', 'SafarSaathi Wallet'].map((m) => (
                       <button
@@ -394,14 +493,14 @@ export default function RideLifecycleModal({
 
               {currentStep === RIDE_STATUS.PAYMENT_COMPLETED && (
                 <div style={{ textAlign: 'center', padding: '1rem' }}>
-                  <CheckCircle2 size={52} style={{ color: '#E6A700', margin: '0 auto 0.75rem auto' }} />
+                  <CheckCircle2 size={52} style={{ color: '#22C55E', margin: '0 auto 0.75rem auto' }} />
                   <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#111827', marginBottom: '0.35rem' }}>
-                    Journey Successfully Completed!
+                    Payment Successful & Trip Completed!
                   </h3>
                   <p style={{ fontSize: '0.9rem', color: '#6B7280', marginBottom: '1.5rem' }}>
-                    Thank you for sharing your ride on SafarSaathi.
+                    Paid <strong>₹{totalFare}</strong> to driver {journey.driverName}. Thank you for carpooling with SafarSaathi.
                   </p>
-                  <button onClick={onClose} className="btn btn-secondary" style={{ width: '100%', padding: '0.85rem' }}>
+                  <button onClick={onClose} className="btn btn-primary" style={{ width: '100%', padding: '0.85rem' }}>
                     Close & Rate Journey
                   </button>
                 </div>
@@ -412,51 +511,121 @@ export default function RideLifecycleModal({
           {/* 2. DRIVER HOST VIEW */}
           {activeRole === 'driver' && (
             <div>
-              <div style={{ backgroundColor: '#FFF4CC', borderRadius: '18px', padding: '1.25rem', border: '1.5px solid #E6A700', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', color: '#C98F00', fontWeight: '800' }}>DRIVER HOST CONTROL PANEL</span>
-                  <span style={{ fontSize: '0.75rem', backgroundColor: '#FFFFFF', color: '#111827', padding: '0.2rem 0.65rem', borderRadius: 'var(--radius-full)', fontWeight: '800' }}>
-                    1 Pending Request
-                  </span>
-                </div>
-                <h4 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827', marginBottom: '0.25rem' }}>
-                  Passenger Seat Request Alert
-                </h4>
-                <div style={{ fontSize: '0.875rem', color: '#4B5563' }}>
-                  Rider <strong>Rahul S.</strong> requested {requestedSeats} seat(s) • Total Fare: <strong style={{ color: '#C98F00' }}>₹{totalFare}</strong>
-                </div>
-              </div>
+              {currentStep !== RIDE_STATUS.TRIP_STARTED && currentStep !== RIDE_STATUS.TRIP_COMPLETED && currentStep !== RIDE_STATUS.PAYMENT_COMPLETED && (
+                <>
+                  <div style={{ backgroundColor: '#FFF4CC', borderRadius: '18px', padding: '1.25rem', border: '1.5px solid #E6A700', marginBottom: '1.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.8rem', color: '#C98F00', fontWeight: '800' }}>DRIVER HOST CONTROL PANEL</span>
+                      <span style={{ fontSize: '0.75rem', backgroundColor: '#FFFFFF', color: '#111827', padding: '0.2rem 0.65rem', borderRadius: 'var(--radius-full)', fontWeight: '800' }}>
+                        1 Pending Request
+                      </span>
+                    </div>
+                    <h4 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827', marginBottom: '0.25rem' }}>
+                      Passenger Seat Request Alert
+                    </h4>
+                    <div style={{ fontSize: '0.875rem', color: '#4B5563' }}>
+                      Rider <strong>Rahul S.</strong> requested {requestedSeats} seat(s) • Total Fare: <strong style={{ color: '#C98F00' }}>₹{totalFare}</strong>
+                    </div>
+                  </div>
 
-              {/* OTP Entry for Driver */}
-              <div style={{ backgroundColor: '#FAFAFA', borderRadius: '18px', padding: '1.25rem', border: '1px solid #E5E7EB', marginBottom: '1.5rem' }}>
-                <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#111827', marginBottom: '0.5rem' }}>
-                  Verify Passenger Start OTP
-                </h4>
-                <form onSubmit={handleVerifyOtpSubmit} style={{ display: 'flex', gap: '0.75rem' }}>
-                  <input
-                    type="text"
-                    maxLength="4"
-                    value={enteredOtp}
-                    onChange={(e) => setEnteredOtp(e.target.value)}
-                    placeholder="Enter 4-Digit OTP"
-                    style={{ flex: 1, padding: '0.75rem', borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '1rem', fontWeight: '800', outline: 'none' }}
-                  />
-                  <button type="submit" className="btn btn-primary">
-                    Verify OTP
+                  {/* OTP Entry for Driver */}
+                  <div style={{ backgroundColor: '#FAFAFA', borderRadius: '18px', padding: '1.25rem', border: '1px solid #E5E7EB', marginBottom: '1.5rem' }}>
+                    <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#111827', marginBottom: '0.5rem' }}>
+                      Verify Passenger Start OTP
+                    </h4>
+                    <form onSubmit={handleVerifyOtpSubmit} style={{ display: 'flex', gap: '0.75rem' }}>
+                      <input
+                        type="text"
+                        maxLength="4"
+                        value={enteredOtp}
+                        onChange={(e) => setEnteredOtp(e.target.value)}
+                        placeholder="Enter 4-Digit OTP (4829)"
+                        style={{ flex: 1, padding: '0.75rem', borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '1rem', fontWeight: '800', outline: 'none' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleVerifyOtpSubmit}
+                        className="btn btn-primary"
+                        style={{ whiteSpace: 'nowrap', padding: '0.75rem 1.15rem' }}
+                      >
+                        Verify OTP
+                      </button>
+                    </form>
+                    {otpError && <div style={{ fontSize: '0.825rem', color: '#EF4444', marginTop: '0.5rem', fontWeight: '700' }}>{otpError}</div>}
+                  </div>
+
+                  {/* Driver Actions */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                    <button onClick={handleDriverAccept} className="btn btn-primary btn-shine" style={{ padding: '0.85rem' }}>
+                      Accept Request ➔
+                    </button>
+                    <button onClick={onClose} className="btn btn-secondary" style={{ padding: '0.85rem' }}>
+                      Decline
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {currentStep === RIDE_STATUS.TRIP_STARTED && (
+                <div style={{ textAlign: 'center', backgroundColor: '#F0FDF4', padding: '1.25rem', borderRadius: '18px', border: '1.5px solid #22C55E' }}>
+                  <div className="badge-pill badge-green" style={{ fontSize: '0.9rem', marginBottom: '0.75rem', padding: '0.5rem 1.25rem' }}>
+                    <span className="pulse-indicator" />
+                    <span>🟢 TRIP LIVE EN-ROUTE ON HIGHWAY</span>
+                  </div>
+                  <h4 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#111827', marginBottom: '0.75rem' }}>
+                    Passenger Boarded & Verified (Rahul S.)
+                  </h4>
+
+                  {/* Real-time Uber/Rapido Style Live Google Map GPS View */}
+                  <LiveMapTrackingView journey={journey} />
+
+                  <button
+                    onClick={() => setCurrentStep(RIDE_STATUS.PAYMENT_PENDING)}
+                    className="btn btn-primary btn-shine"
+                    style={{ width: '100%', padding: '0.9rem', backgroundColor: '#15803D', borderColor: '#15803D', color: '#FFFFFF' }}
+                  >
+                    🏁 End Ride & Request Passenger Payment (₹{totalFare}) ➔
                   </button>
-                </form>
-                {otpError && <div style={{ fontSize: '0.825rem', color: '#EF4444', marginTop: '0.5rem', fontWeight: '700' }}>{otpError}</div>}
-              </div>
+                </div>
+              )}
 
-              {/* Driver Actions */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <button onClick={handleDriverAccept} className="btn btn-primary btn-shine" style={{ padding: '0.85rem' }}>
-                  Accept Request ➔
-                </button>
-                <button onClick={onClose} className="btn btn-secondary" style={{ padding: '0.85rem' }}>
-                  Decline
-                </button>
-              </div>
+              {(currentStep === RIDE_STATUS.TRIP_COMPLETED || currentStep === RIDE_STATUS.PAYMENT_COMPLETED) && (
+                <div style={{ textAlign: 'center', backgroundColor: '#FFF4CC', padding: '1.5rem', borderRadius: '18px', border: '1.5px solid #E6A700' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>🎉</div>
+                  <h4 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#111827', marginBottom: '0.35rem' }}>
+                    Trip Completed & Payment Settled!
+                  </h4>
+                  <div style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', padding: '1rem', margin: '1rem 0', border: '1px solid #FDE68A', textAlign: 'left' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#374151' }}>
+                      <span>Total Fare Collected:</span>
+                      <strong>₹{totalFare}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.4rem', color: '#6B7280' }}>
+                      <span>Platform Fee (5%):</span>
+                      <span>-₹{platformFee}</span>
+                    </div>
+                    <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '0.4rem', display: 'flex', justifyContent: 'space-between', fontSize: '1rem', fontWeight: '800', color: '#15803D' }}>
+                      <span>Net Driver Payout Credited:</span>
+                      <span>₹{driverEarnings}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      alert(`💸 ₹${driverEarnings} has been transferred to your connected UPI ID!`);
+                      onClose();
+                    }}
+                    className="btn btn-primary btn-shine"
+                    style={{ width: '100%', padding: '0.85rem', marginBottom: '0.5rem' }}
+                  >
+                    💸 Instant Withdrawal to Bank / UPI (₹{driverEarnings}) ➔
+                  </button>
+
+                  <button onClick={onClose} className="btn btn-secondary" style={{ width: '100%', padding: '0.75rem', fontSize: '0.85rem' }}>
+                    Close & Return to Dashboard
+                  </button>
+                </div>
+              )}
             </div>
           )}
 

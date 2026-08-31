@@ -114,10 +114,10 @@ export default function LiveJourneys({ publishedJourneys = [], onSelectJourney, 
             <span>Real-Time Route Matching</span>
           </div>
           <h2 style={{ fontSize: 'clamp(2rem, 3.5vw, 2.75rem)', fontWeight: '800', marginBottom: '0.75rem', color: '#111827' }}>
-            Live Journeys Near You
+            Available Rides & Published Journeys
           </h2>
           <p style={{ fontSize: '1.1rem', color: '#6B7280' }}>
-            Find travellers already on the road (Cars & Bikes) heading your way.
+            Book seats on upcoming scheduled rides or live vehicles heading your way.
           </p>
         </div>
 
@@ -322,14 +322,24 @@ export default function LiveJourneys({ publishedJourneys = [], onSelectJourney, 
                   </div>
                 </div>
 
-                <button
-                  onClick={() => onSelectJourney(journey)}
-                  className="btn btn-primary"
-                  style={{ width: '100%', padding: '0.8rem' }}
-                >
-                  View Journey
-                  <ArrowRight size={18} />
-                </button>
+                {(() => {
+                  const isMine = journey.isUserPublished || (journey.driverName && journey.driverName.includes('You'));
+                  return (
+                    <button
+                      onClick={() => onSelectJourney(journey)}
+                      className="btn btn-primary"
+                      style={{
+                        width: '100%',
+                        padding: '0.8rem',
+                        backgroundColor: isMine ? '#111827' : '#E6A700',
+                        borderColor: isMine ? '#111827' : '#E6A700',
+                        color: isMine ? '#FFFFFF' : '#111827',
+                      }}
+                    >
+                      {isMine ? '⚙️ Manage My Published Ride ➔' : 'Book Seat / Request ➔'}
+                    </button>
+                  );
+                })()}
               </div>
 
             </div>

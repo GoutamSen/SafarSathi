@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, User, ArrowRight, Bell } from 'lucide-react';
 
 export default function Navbar({
+  currentRoleMode = 'passenger',
+  onRoleChange,
   onOpenJoinModal,
   onOpenLoginModal,
   onOpenOfferModal,
@@ -113,6 +115,51 @@ export default function Navbar({
             </span>
           </div>
         </a>
+
+        {/* Global Role Switcher Pill */}
+        <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: '12px', padding: '3px', border: '1px solid #E5E7EB' }}>
+          <button
+            type="button"
+            onClick={() => onRoleChange && onRoleChange('passenger')}
+            style={{
+              padding: '0.35rem 0.75rem',
+              borderRadius: '9px',
+              border: 'none',
+              backgroundColor: currentRoleMode === 'passenger' ? '#E6A700' : 'transparent',
+              color: currentRoleMode === 'passenger' ? '#111827' : '#6B7280',
+              fontWeight: '800',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            🧳 Passenger
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onRoleChange && onRoleChange('driver')}
+            style={{
+              padding: '0.35rem 0.75rem',
+              borderRadius: '9px',
+              border: 'none',
+              backgroundColor: currentRoleMode === 'driver' ? '#111827' : 'transparent',
+              color: currentRoleMode === 'driver' ? '#FFFFFF' : '#6B7280',
+              fontWeight: '800',
+              fontSize: '0.8rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            🚗 Driver Host
+          </button>
+        </div>
 
         {/* Centered Desktop Nav Links */}
         <nav
