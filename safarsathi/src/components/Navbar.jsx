@@ -11,7 +11,9 @@ export default function Navbar({
   onDriverClick,
   onAdminClick,
   driverNotificationsCount = 1,
-  onOpenDriverNotification
+  onOpenDriverNotification,
+  onOpenMyRidesModal,
+  totalActiveRidesCount = 0,
 }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -200,6 +202,39 @@ export default function Navbar({
 
           <button
             type="button"
+            onClick={onOpenMyRidesModal}
+            className="btn btn-secondary"
+            style={{
+              padding: '0.5rem 0.9rem',
+              fontSize: '0.85rem',
+              backgroundColor: '#FFF4CC',
+              borderColor: '#E6A700',
+              color: '#111827',
+              fontWeight: '800',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+            }}
+          >
+            <span>🧳 My Rides</span>
+            {totalActiveRidesCount > 0 && (
+              <span
+                style={{
+                  backgroundColor: '#E6A700',
+                  color: '#111827',
+                  fontSize: '0.75rem',
+                  fontWeight: '800',
+                  padding: '0.1rem 0.45rem',
+                  borderRadius: '10px',
+                }}
+              >
+                {totalActiveRidesCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
             onClick={onOpenLoginModal}
             className="btn btn-secondary"
             style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}
@@ -350,6 +385,25 @@ export default function Navbar({
               borderTop: '1px solid #E5E7EB',
             }}
           >
+            <button
+              className="btn btn-secondary"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                onOpenMyRidesModal();
+              }}
+              style={{
+                width: '100%',
+                minHeight: '42px',
+                justifyContent: 'center',
+                backgroundColor: '#FFF4CC',
+                borderColor: '#E6A700',
+                color: '#111827',
+                fontWeight: '800',
+              }}
+            >
+              🧳 My Rides ({totalActiveRidesCount})
+            </button>
+
             <button
               className="btn btn-secondary"
               onClick={() => {

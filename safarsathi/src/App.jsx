@@ -14,6 +14,7 @@ import Footer from './components/Footer';
 import { JourneyDetailModal, OfferRideModal, JoinModal } from './components/Modals';
 import RideLifecycleModal from './components/RideLifecycleModal';
 import RouteExplorerModal from './components/RouteExplorerModal';
+import MyRidesHubModal from './components/MyRidesHubModal';
 
 import { realtimeSync } from './services/realtimeSync';
 
@@ -22,6 +23,7 @@ export default function App() {
   const [selectedCorridor, setSelectedCorridor] = useState(null);
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
+  const [isMyRidesModalOpen, setIsMyRidesModalOpen] = useState(false);
   const [joinModalMode, setJoinModalMode] = useState('join');
   const [toastMessage, setToastMessage] = useState(null);
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
@@ -118,13 +120,8 @@ export default function App() {
 
   const handlePublishJourney = (newJourney) => {
     setPublishedJourneys((prev) => [newJourney, ...prev]);
-    showToast(`🎉 Ride Published Successfully! Navigated to My Published Rides dashboard.`);
-    setTimeout(() => {
-      const pubSec = document.getElementById('my-published-rides');
-      if (pubSec) {
-        pubSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 150);
+    showToast(`🎉 Ride Published Successfully! Opening your My Rides Hub.`);
+    setIsMyRidesModalOpen(true);
   };
 
   React.useEffect(() => {
@@ -307,6 +304,8 @@ export default function App() {
         onAdminClick={handleAdminRoleClick}
         driverNotificationsCount={pendingDriverNotification ? 1 : 0}
         onOpenDriverNotification={handleOpenDriverNotification}
+        onOpenMyRidesModal={() => setIsMyRidesModalOpen(true)}
+        totalActiveRidesCount={confirmedBookings.length + publishedJourneys.length}
       />
 
       {/* Main Content Flow: Screen 1 = Hero Viewport, Scroll down = All Remaining Sections */}
@@ -380,233 +379,6 @@ export default function App() {
 
         {/* 2. TRUST / STATS SECTION (Visible on Scroll) */}
         <TrustStats />
-
-        {/* 2.5 MY CONFIRMED BOOKINGS & ACTIVE TRIPS */}
-        {confirmedBookings.length > 0 && (
-          <section id="my-active-bookings" className="container" style={{ marginTop: '2.5rem', marginBottom: '1.5rem' }}>
-            <div style={{
-              backgroundColor: '#FFF8E6',
-              border: '2px solid #FFB800',
-              borderRadius: '20px',
-              padding: '1.5rem',
-              color: '#111827',
-              boxShadow: '0 10px 30px rgba(255, 184, 0, 0.2)',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                <div className="badge-pill badge-green" style={{ fontSize: '0.8rem' }}>
-                  <span className="pulse-indicator" />
-                  <span>🎟️ MY ACTIVE BOOKING REQUESTS & PASSES ({confirmedBookings.length})</span>
-                </div>
-                <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>Pay directly to host after verifying OTP</span>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                {confirmedBookings.map((booking, idx) => {
-                  const isPending = booking.bookingStatus === 'REQUEST_PENDING';
-                  return (
-                    <div
-                      key={booking.id || idx}
-                      style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: '1rem',
-                        backgroundColor: '#FFFFFF',
-                        padding: '1.15rem 1.25rem',
-                        borderRadius: '16px',
-                        border: isPending ? '2px dashed #E6A700' : '1px solid #E5E7EB',
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: '0.8rem', color: isPending ? '#B45309' : '#15803D', fontWeight: '800', marginBottom: '0.2rem' }}>
-                          {isPending ? '⏳ REQUEST SENT (Pending Driver Approval)' : '✅ RIDE CONFIRMED & ACTIVE PASS'} • {booking.departureTime || 'Today'}
-                        </div>
-                        <h4 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#111827', marginBottom: '0.4rem' }}>
-                          {booking.routeFrom} ➔ {booking.routeTo}
-                        </h4>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', fontSize: '0.85rem', color: '#6B7280' }}>
-                          <span>Driver: <strong>{booking.driverName}</strong> (Govt ID Verified)</span>
-                          <span>Vehicle: <strong>{booking.vehicleModel}</strong></span>
-                          <span>Pickup Point: <strong>{booking.pickupPoint}</strong></span>
-                          <span>Fare: <strong style={{ color: '#D97706' }}>₹{booking.totalFare}</strong> ({booking.requestedSeats || 1} Seat)</span>
-                        </div>
-                      </div>
-
-                      {isPending ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-end' }}>
-                          <span style={{ fontSize: '0.75rem', color: '#B45309', fontWeight: '800' }}>Waiting for Driver Response...</span>
-                          <button
-                            type="button"
-                            onClick={() => handleDriverAcceptBooking(booking.id)}
-                            className="btn btn-primary"
-                            style={{ padding: '0.65rem 1.15rem', fontSize: '0.85rem', whiteSpace: 'nowrap', backgroundColor: '#22C55E', borderColor: '#22C55E', color: '#FFFFFF' }}
-                          >
-                            🔔 Driver: Accept Request ➔
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedJourney(booking)}
-                          className="btn btn-primary btn-shine"
-                          style={{ padding: '0.75rem 1.25rem', fontSize: '0.9rem', whiteSpace: 'nowrap' }}
-                        >
-                          Open Ticket & Pickup OTP ➔
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* 2.6 MY PUBLISHED RIDES & DRIVER DASHBOARD */}
-        {publishedJourneys.length > 0 && (
-          <section id="my-published-rides" className="container" style={{ marginTop: '2rem', marginBottom: '1.5rem' }}>
-            <div style={{
-              backgroundColor: '#FFFFFF',
-              border: '2px solid #E5E7EB',
-              borderRadius: '24px',
-              padding: '1.5rem',
-              color: '#111827',
-              boxShadow: 'var(--shadow-md)',
-            }}>
-              {/* Header Bar */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                  <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    🚗 My Published Rides
-                  </h3>
-                  <span className="badge-pill" style={{ backgroundColor: '#FFF4CC', color: '#C98F00', fontSize: '0.775rem', fontWeight: '800', padding: '0.2rem 0.65rem' }}>
-                    {publishedJourneys.length} Active Ride{publishedJourneys.length > 1 ? 's' : ''}
-                  </span>
-                </div>
-
-                <button
-                  onClick={handleOpenOffer}
-                  className="btn btn-primary btn-shine"
-                  style={{ padding: '0.55rem 1.1rem', fontSize: '0.85rem' }}
-                >
-                  + Offer Another Ride ➔
-                </button>
-              </div>
-
-              {/* Grid of Simplified Intelligent Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-                {publishedJourneys.map((j) => {
-                  const hasBookedPassengers = (j.confirmedPassengersCount && j.confirmedPassengersCount > 0) ||
-                    confirmedBookings.some((b) => (b.rideId === j.id || (b.routeFrom === j.routeFrom && b.routeTo === j.routeTo && b.id !== 'cb-sample-1')) && b.bookingStatus === 'BOOKING_CONFIRMED');
-                  const hasPendingRequest = pendingDriverNotification && pendingDriverNotification.routeFrom === j.routeFrom && pendingDriverNotification.routeTo === j.routeTo;
-                  const isOtpReady = hasBookedPassengers || hasPendingRequest;
-
-                  return (
-                    <div
-                      key={j.id}
-                      style={{
-                        backgroundColor: '#FAFAFA',
-                        borderRadius: '18px',
-                        padding: '1.25rem',
-                        border: '1.5px solid #E5E7EB',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        transition: 'all 0.2s ease',
-                      }}
-                    >
-                      <div>
-                        {/* Status & Price Row */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                          <div className="badge-pill badge-green" style={{ fontSize: '0.75rem', padding: '0.2rem 0.65rem' }}>
-                            <span className="pulse-indicator" />
-                            <span>🟡 PUBLISHED</span>
-                          </div>
-
-                          <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#C98F00' }}>
-                            {j.costPerSeat} <span style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: '500' }}>/ seat</span>
-                          </div>
-                        </div>
-
-                        {/* Route Title */}
-                        <h4 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span>{j.routeFrom}</span>
-                          <span style={{ color: '#E6A700' }}>➔</span>
-                          <span>{j.routeTo}</span>
-                        </h4>
-
-                        {/* Simplified Info Box */}
-                        <div style={{
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: '12px',
-                          padding: '0.85rem 1rem',
-                          border: '1px solid #E5E7EB',
-                          fontSize: '0.85rem',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '0.45rem',
-                          marginBottom: '1.15rem',
-                        }}>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span style={{ color: '#6B7280' }}>📍 Pickup:</span>
-                            <strong style={{ color: '#111827' }}>{j.currentLocation}</strong>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span style={{ color: '#6B7280' }}>🕐 Departure:</span>
-                            <strong style={{ color: '#C98F00' }}>{j.departureTime}</strong>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <span style={{ color: '#6B7280' }}>{j.vehicleType === 'Bike' ? '🏍️ Vehicle:' : '🚗 Vehicle:'}</span>
-                            <strong style={{ color: '#111827' }}>{j.vehicleModel}</strong>
-                          </div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed #E5E7EB', paddingTop: '0.4rem', marginTop: '0.2rem' }}>
-                            <span style={{ color: '#6B7280' }}>👥 Passenger Status:</span>
-                            <strong style={{ color: hasBookedPassengers ? '#15803D' : (hasPendingRequest ? '#D97706' : '#4B5563'), fontWeight: '800' }}>
-                              {hasBookedPassengers ? '🟢 1 Passenger Confirmed' : (hasPendingRequest ? '🔔 1 Seat Request Alert!' : `👥 ${j.availableSeats} Seat(s) Available`)}
-                            </strong>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Context-Aware Primary Action Button */}
-                      <div>
-                        <button
-                          onClick={() => {
-                            setSelectedJourney(j);
-                            setActiveModalRole('driver');
-                          }}
-                          className="btn btn-primary btn-shine"
-                          style={{
-                            width: '100%',
-                            padding: '0.8rem',
-                            fontSize: '0.9rem',
-                            backgroundColor: hasBookedPassengers ? '#111827' : (hasPendingRequest ? '#D97706' : '#E6A700'),
-                            borderColor: hasBookedPassengers ? '#111827' : (hasPendingRequest ? '#D97706' : '#E6A700'),
-                            color: (hasBookedPassengers || hasPendingRequest) ? '#FFFFFF' : '#111827',
-                          }}
-                        >
-                          {hasBookedPassengers ? '🔐 Open Driver Control Room ➔' : (hasPendingRequest ? '🔔 Review Request & Control Room ➔' : '⚙️ Manage Ride ➔')}
-                        </button>
-
-                        {/* 3-Dot Quick Options link */}
-                        <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-                          <button
-                            type="button"
-                            onClick={() => showToast('⚙️ Ride Settings: Edit Route, Share Pass, or Cancel Ride')}
-                            style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '600' }}
-                          >
-                            ••• Ride Options & Settings
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* 3. LIVE JOURNEYS SECTION */}
         <LiveJourneys
@@ -715,6 +487,52 @@ export default function App() {
             }
           }}
         />
+      )}
+
+      {/* Dedicated My Journeys & Active Rides Hub Modal */}
+      <MyRidesHubModal
+        isOpen={isMyRidesModalOpen}
+        onClose={() => setIsMyRidesModalOpen(false)}
+        confirmedBookings={confirmedBookings}
+        publishedJourneys={publishedJourneys}
+        pendingDriverNotification={pendingDriverNotification}
+        onOpenDriverControlRoom={(j) => {
+          setSelectedJourney(j);
+          setActiveModalRole('driver');
+        }}
+        onOpenPassengerTicket={(b) => {
+          setSelectedJourney(b);
+          setActiveModalRole('passenger');
+        }}
+        onOfferRideClick={handleOpenOffer}
+        onFindRideClick={handleFindClick}
+      />
+
+      {/* Floating Bottom My Rides Action Pill for Quick Access */}
+      {(confirmedBookings.length > 0 || publishedJourneys.length > 0) && (
+        <button
+          onClick={() => setIsMyRidesModalOpen(true)}
+          className="btn btn-primary btn-shine"
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 90,
+            padding: '0.75rem 1.25rem',
+            borderRadius: '9999px',
+            boxShadow: '0 10px 30px rgba(230, 167, 0, 0.4)',
+            fontSize: '0.875rem',
+            fontWeight: '800',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+        >
+          <span>🧳 My Active Rides</span>
+          <span style={{ backgroundColor: '#111827', color: '#FFFFFF', padding: '0.15rem 0.55rem', borderRadius: '12px', fontSize: '0.75rem' }}>
+            {confirmedBookings.length + publishedJourneys.length}
+          </span>
+        </button>
       )}
 
     </div>
