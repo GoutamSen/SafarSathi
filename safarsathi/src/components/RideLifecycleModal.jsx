@@ -24,42 +24,131 @@ import {
   Shield,
   FileCheck,
   User,
-  ExternalLink
+  ExternalLink,
+  Compass,
+  Volume2,
+  Search as SearchIcon,
+  ChevronDown,
+  Maximize2,
+  Target
 } from 'lucide-react';
-import { MapContainer, TileLayer, Polyline, Marker } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
+// Helper component to trigger Leaflet map resize automatically
+function MapResizer({ isFullScreen }) {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (map) map.invalidateSize();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [map, isFullScreen]);
+  return null;
+}
+
+// Helper component to smoothly re-center map view onto live vehicle position
+function MapRecenterControl({ targetCoords, trigger }) {
+  const map = useMap();
+  useEffect(() => {
+    if (map && trigger > 0) {
+      map.flyTo(targetCoords, 12, { duration: 1.2, animate: true });
+    }
+  }, [map, trigger, targetCoords]);
+  return null;
+}
+
 /* ====================================================================
-   LIVE GOOGLE MAP GPS TRACKING SUB-COMPONENT (Uber/Rapido Style)
+   REAL GOOGLE MAPS NAVIGATION UI SUB-COMPONENT (Screenshot 2 Match)
 ==================================================================== */
 function LiveMapTrackingView({ journey }) {
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [recenterTrigger, setRecenterTrigger] = useState(0);
+  const [recenterToast, setRecenterToast] = useState(false);
+
   const fromName = journey?.routeFrom || 'Indore';
   const toName = journey?.routeTo || 'Khargone';
 
   const startCoords = [22.7196, 75.8577]; // Indore
+  const waypoints = [
+    [22.6100, 75.8000], // Pithampur
+    [22.4200, 75.6700], // Manpur / Maheshwar
+    [22.1500, 75.6800], // Kasrawad (Current Live Position)
+  ];
   const endCoords = [21.8247, 75.6102];   // Khargone
-  const currentVehicleCoords = [22.1500, 75.6800]; // Live GPS location en-route
 
-  const startPin = L.divIcon({
-    className: 'custom-map-pin',
-    html: `<div style="background:#111827;color:#FFFFFF;padding:4px 8px;border-radius:10px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,0.3);border:1px solid #E6A700;">📍 ${fromName}</div>`,
-    iconSize: [80, 30],
-    iconAnchor: [40, 15]
+  // Full Polyline GPS Waypoints from Indore to Khargone
+  const fullPolylinePath = [
+    [22.7196, 75.8577], // Indore
+    [22.6500, 75.8300],
+    [22.6100, 75.8000], // Pithampur
+    [22.5000, 75.7400],
+    [22.4200, 75.6700], // Manpur
+    [22.3000, 75.6750], // Maheshwar
+    [22.1500, 75.6800], // Kasrawad
+    [22.0000, 75.6400],
+    [21.8247, 75.6102]  // Khargone
+  ];
+
+  const [pathIndex, setPathIndex] = useState(6); // Starts at Kasrawad (~78% completed)
+  const currentVehiclePosition = fullPolylinePath[pathIndex];
+
+  // Dynamic remaining distance and ETA calculation
+  const remainingDistanceKm = Math.max(2, Math.round(((fullPolylinePath.length - 1 - pathIndex) / (fullPolylinePath.length - 1)) * 88));
+  const remainingEtaMins = Math.max(1, Math.round((remainingDistanceKm / 72) * 60));
+
+  // Live GPS movement animation loop (moves car forward along highway)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPathIndex((prev) => (prev < fullPolylinePath.length - 1 ? prev + 1 : prev));
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleRecenter = () => {
+    setRecenterTrigger((prev) => prev + 1);
+    setRecenterToast(true);
+    setTimeout(() => setRecenterToast(false), 2200);
+  };
+
+  const altRouteCoords = [
+    [22.7196, 75.8577], // Indore
+    [22.5986, 75.2979], // Dhar / Mandav route
+    [22.1793, 75.5855], // Maheshwar
+    [21.8247, 75.6102]  // Khargone
+  ];
+
+  // Google Maps Blue Origin Pulse Dot
+  const originDot = L.divIcon({
+    className: 'gmap-blue-dot',
+    html: `<div style="width:22px;height:22px;background:#2563EB;border:3px solid #FFFFFF;border-radius:50%;box-shadow:0 0 14px rgba(37,99,235,0.8);"></div>`,
+    iconSize: [22, 22],
+    iconAnchor: [11, 11]
   });
 
-  const endPin = L.divIcon({
-    className: 'custom-map-pin',
-    html: `<div style="background:#15803D;color:#FFFFFF;padding:4px 8px;border-radius:10px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,0.3);border:1px solid #22C55E;">🏁 ${toName}</div>`,
-    iconSize: [90, 30],
-    iconAnchor: [45, 15]
+  // Google Maps Alternate Route "3 min slower" Badge
+  const altBadgePin = L.divIcon({
+    className: 'gmap-alt-badge',
+    html: `<div style="background:#FFFFFF;color:#4B5563;padding:4px 9px;border-radius:14px;font-size:11px;font-weight:700;box-shadow:0 3px 10px rgba(0,0,0,0.15);border:1px solid #D1D5DB;white-space:nowrap;">3 min slower</div>`,
+    iconSize: [95, 26],
+    iconAnchor: [47, 13]
   });
 
+  // Google Maps Vehicle Yellow Capsule Pin
   const vehiclePin = L.divIcon({
-    className: 'custom-vehicle-pin',
-    html: `<div style="background:#E6A700;color:#111827;padding:5px 10px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 6px 16px rgba(230,167,0,0.7);display:flex;align-items:center;gap:4px;border:2px solid #FFFFFF;">🚗 Hyundai Creta (72 km/h)</div>`,
-    iconSize: [160, 36],
-    iconAnchor: [80, 18]
+    className: 'gmap-vehicle-pin',
+    html: `<div style="background:#E6A700;color:#111827;padding:5px 12px;border-radius:20px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 6px 18px rgba(230,167,0,0.7);display:flex;align-items:center;gap:4px;border:2px solid #FFFFFF;">🚗 Hyundai Creta (72 km/h)</div>`,
+    iconSize: [165, 36],
+    iconAnchor: [82, 18]
+  });
+
+  // Google Maps Red Destination Marker Pin
+  const destinationPin = L.divIcon({
+    className: 'gmap-dest-pin',
+    html: `<div style="background:#DC2626;color:#FFFFFF;padding:4px 10px;border-radius:10px;font-size:11px;font-weight:800;white-space:nowrap;box-shadow:0 4px 12px rgba(220,38,38,0.5);border:1px solid #FFFFFF;">🏁 ${toName}</div>`,
+    iconSize: [95, 30],
+    iconAnchor: [47, 15]
   });
 
   const containerStyle = isFullScreen
@@ -76,11 +165,12 @@ function LiveMapTrackingView({ journey }) {
       }
     : {
         position: 'relative',
-        borderRadius: '18px',
+        borderRadius: '20px',
         overflow: 'hidden',
-        border: '2px solid #E6A700',
+        border: '2px solid #2563EB',
         marginBottom: '1.25rem',
-        height: '240px',
+        height: '280px',
+        boxShadow: '0 8px 24px rgba(37,99,235,0.15)',
       };
 
   return (
@@ -90,112 +180,257 @@ function LiveMapTrackingView({ journey }) {
         zoom={isFullScreen ? 10 : 9}
         scrollWheelZoom={true}
         dragging={true}
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%', height: '100%', backgroundColor: '#E5E3DF' }}
       >
+        <MapResizer isFullScreen={isFullScreen} />
+        <MapRecenterControl targetCoords={currentVehiclePosition} trigger={recenterTrigger} />
+
+        {/* Clean OpenStreetMap Tile Engine - No Watermarks */}
         <TileLayer
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; OpenStreetMap'
+          attribution='&copy; OpenStreetMap contributors'
         />
+
+        {/* Alternate Route (Light Blue - 3 min slower) */}
         <Polyline
-          positions={[startCoords, currentVehicleCoords, endCoords]}
-          color="#E6A700"
-          weight={6}
+          positions={altRouteCoords}
+          color="#93C5FD"
+          weight={5}
+          opacity={0.85}
         />
-        <Marker position={startCoords} icon={startPin} />
-        <Marker position={currentVehicleCoords} icon={vehiclePin} />
-        <Marker position={endCoords} icon={endPin} />
+        <Marker position={[22.35, 75.40]} icon={altBadgePin} />
+
+        {/* Primary Active Highway Route (Royal Blue like Google Maps) */}
+        <Polyline
+          positions={[startCoords, ...waypoints, endCoords]}
+          color="#2563EB"
+          weight={11}
+          opacity={0.95}
+        />
+
+        {/* Origin Blue GPS Marker */}
+        <Marker position={startCoords} icon={originDot} />
+
+        {/* Live Moving Vehicle Marker */}
+        <Marker position={currentVehiclePosition} icon={vehiclePin} />
+
+        {/* Destination Marker */}
+        <Marker position={endCoords} icon={destinationPin} />
       </MapContainer>
 
-      {/* Floating GPS HUD Overlay */}
+      {/* RE-CENTER TOAST NOTIFICATION OVERLAY */}
+      {recenterToast && (
+        <div style={{
+          position: 'absolute',
+          top: '72px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 1001,
+          backgroundColor: '#111827',
+          color: '#E6A700',
+          padding: '0.45rem 0.95rem',
+          borderRadius: '20px',
+          fontSize: '0.75rem',
+          fontWeight: '800',
+          boxShadow: '0 6px 18px rgba(0,0,0,0.4)',
+          border: '1px solid #E6A700',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.4rem',
+          whiteSpace: 'nowrap',
+        }}>
+          <span>🎯 Map Re-centered onto Live Hyundai Creta GPS</span>
+        </div>
+      )}
+
+      {/* TOP LEFT: Google Maps Turn-by-Turn Navigation Header Banner */}
       <div style={{
         position: 'absolute',
-        top: isFullScreen ? '16px' : '10px',
-        left: isFullScreen ? '16px' : '10px',
-        right: isFullScreen ? '16px' : '10px',
+        top: '12px',
+        left: '12px',
         zIndex: 1000,
-        backgroundColor: 'rgba(17, 24, 39, 0.92)',
-        backdropFilter: 'blur(10px)',
+        backgroundColor: '#064E3B',
         color: '#FFFFFF',
         borderRadius: '14px',
-        padding: '0.65rem 1rem',
+        padding: '0.55rem 0.95rem',
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        border: '1px solid rgba(230, 167, 0, 0.4)',
-        fontSize: '0.825rem',
-        boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+        gap: '0.6rem',
+        boxShadow: '0 6px 16px rgba(0,0,0,0.3)',
+        border: '1px solid rgba(255, 255, 255, 0.2)',
+        maxWidth: isFullScreen ? '360px' : '230px',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '800', color: '#E6A700' }}>
-          <span className="pulse-indicator" style={{ backgroundColor: '#22C55E' }} />
-          <span>LIVE HIGHWAY GPS TRACKING</span>
-          {isFullScreen && <span style={{ color: '#9CA3AF', fontWeight: '600' }}>• 18 km to {toName}</span>}
+        <div style={{ backgroundColor: '#10B981', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Navigation size={16} style={{ color: '#FFFFFF', transform: 'rotate(45deg)' }} />
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <span style={{ fontWeight: '800', color: '#FFFFFF', fontSize: '0.85rem' }}>ETA: 8 mins</span>
-          <button
-            type="button"
-            onClick={() => setIsFullScreen(!isFullScreen)}
-            style={{
-              padding: '0.35rem 0.75rem',
-              borderRadius: '8px',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              backgroundColor: isFullScreen ? '#E6A700' : 'rgba(255, 255, 255, 0.15)',
-              color: isFullScreen ? '#111827' : '#FFFFFF',
-              fontWeight: '800',
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-            }}
-          >
-            {isFullScreen ? '🗗 Exit Fullscreen' : '⛶ Fullscreen'}
-          </button>
+        <div style={{ textAlign: 'left', lineHeight: '1.2' }}>
+          <div style={{ fontSize: '0.7rem', color: '#6EE7B7', fontWeight: '800', textTransform: 'uppercase' }}>
+            Then ➔ Continue 18 km
+          </div>
+          <div style={{ fontSize: '0.8rem', fontWeight: '800', color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            SH-1 (Indore ➔ Khargone)
+          </div>
         </div>
       </div>
 
-      {/* Floating Bottom HUD Card for Fullscreen Mode */}
-      {isFullScreen && (
-        <div style={{
-          position: 'absolute',
-          bottom: '20px',
-          left: '16px',
-          right: '16px',
-          zIndex: 1000,
-          backgroundColor: '#111827',
-          color: '#FFFFFF',
-          borderRadius: '16px',
-          padding: '1rem 1.25rem',
-          border: '1.5px solid #E6A700',
-          boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}>
-          <div>
-            <div style={{ fontSize: '0.75rem', color: '#E6A700', fontWeight: '800', marginBottom: '0.2rem' }}>
-              EN-ROUTE LIVE DRIVING DASHBOARD
-            </div>
-            <h4 style={{ fontSize: '1.1rem', fontWeight: '800', margin: 0, color: '#FFFFFF' }}>
-              {fromName} ➔ {toName} (78% Completed)
-            </h4>
-            <div style={{ fontSize: '0.8rem', color: '#9CA3AF', marginTop: '0.2rem' }}>
-              Speed: <strong>72 km/h</strong> • Remaining: <strong>18 km (8 Mins)</strong>
-            </div>
-          </div>
+      {/* TOP RIGHT: Google Maps Navigation Control Stack (Screenshot 2 Match) */}
+      <div style={{
+        position: 'absolute',
+        top: '12px',
+        right: '12px',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.5rem',
+      }}>
+        {/* Re-center Live Vehicle Location Button (Google Maps Style) */}
+        <button
+          type="button"
+          onClick={handleRecenter}
+          title="Re-center onto Live Vehicle Location"
+          style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '50%',
+            backgroundColor: '#2563EB',
+            color: '#FFFFFF',
+            border: '2px solid #FFFFFF',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 6px 16px rgba(37,99,235,0.4)',
+            cursor: 'pointer',
+          }}
+        >
+          <Target size={18} />
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setIsFullScreen(false)}
-            className="btn btn-primary"
-            style={{ padding: '0.6rem 1.1rem', fontSize: '0.85rem' }}
-          >
-            🗗 Back to Controls
-          </button>
+        {/* Collapse Arrow */}
+        <button
+          type="button"
+          onClick={() => setIsFullScreen(!isFullScreen)}
+          title="Toggle Screen View"
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            backgroundColor: '#FFFFFF',
+            color: '#111827',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            cursor: 'pointer',
+          }}
+        >
+          {isFullScreen ? <ChevronDown size={18} /> : <Maximize2 size={16} />}
+        </button>
+
+        {/* Compass N */}
+        <button
+          type="button"
+          onClick={() => alert('🧭 Compass Centered to North')}
+          title="Center North"
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            backgroundColor: '#FFFFFF',
+            color: '#DC2626',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            cursor: 'pointer',
+            fontWeight: '800',
+            fontSize: '0.85rem',
+          }}
+        >
+          <Compass size={18} />
+        </button>
+
+        {/* Route Search */}
+        <button
+          type="button"
+          onClick={() => alert('🔍 Searching highway petrol pumps & dhabas...')}
+          title="Search Route Amenities"
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            backgroundColor: '#FFFFFF',
+            color: '#4B5563',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            cursor: 'pointer',
+          }}
+        >
+          <SearchIcon size={16} />
+        </button>
+
+        {/* Mute Audio Voice Guidance */}
+        <button
+          type="button"
+          onClick={() => setIsMuted(!isMuted)}
+          title="Voice Guidance"
+          style={{
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            backgroundColor: isMuted ? '#FEE2E2' : '#FFFFFF',
+            color: isMuted ? '#DC2626' : '#111827',
+            border: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            cursor: 'pointer',
+          }}
+        >
+          <Volume2 size={16} />
+        </button>
+      </div>
+
+      {/* BOTTOM FLOATING BAR: Live ETA & Route Info */}
+      <div style={{
+        position: 'absolute',
+        bottom: '12px',
+        left: '12px',
+        right: '12px',
+        zIndex: 1000,
+        backgroundColor: 'rgba(255, 255, 255, 0.96)',
+        backdropFilter: 'blur(10px)',
+        color: '#111827',
+        borderRadius: '14px',
+        padding: '0.6rem 0.9rem',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        boxShadow: '0 6px 20px rgba(0,0,0,0.15)',
+        border: '1px solid #E5E7EB',
+      }}>
+        <div>
+          <div style={{ fontSize: '0.75rem', color: '#15803D', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+            <span className="pulse-indicator" style={{ backgroundColor: '#22C55E' }} />
+            <span>Fastest Route • SH-1 Highway</span>
+          </div>
+          <div style={{ fontSize: '0.85rem', fontWeight: '800', color: '#111827' }}>
+            {fromName} ➔ {toName} ({remainingDistanceKm} km left)
+          </div>
         </div>
-      )}
+
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '1rem', fontWeight: '800', color: '#2563EB' }}>
+            ETA: {remainingEtaMins} Mins
+          </div>
+          <span style={{ fontSize: '0.7rem', color: '#6B7280', fontWeight: '600' }}>Speed: 72 km/h</span>
+        </div>
+      </div>
     </div>
   );
 }
@@ -618,28 +853,54 @@ export default function RideLifecycleModal({
 
                   {/* OTP Entry for Driver */}
                   <div style={{ backgroundColor: '#FAFAFA', borderRadius: '18px', padding: '1.25rem', border: '1px solid #E5E7EB', marginBottom: '1.5rem' }}>
-                    <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#111827', marginBottom: '0.5rem' }}>
-                      Verify Passenger Start OTP
-                    </h4>
-                    <form onSubmit={handleVerifyOtpSubmit} style={{ display: 'flex', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                      <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#111827', margin: 0 }}>
+                        Verify Passenger Start OTP
+                      </h4>
+                      <span style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: '700' }}>4-Digit Pass</span>
+                    </div>
+
+                    <form onSubmit={handleVerifyOtpSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       <input
                         type="text"
                         maxLength="4"
                         value={enteredOtp}
                         onChange={(e) => setEnteredOtp(e.target.value)}
                         placeholder="Enter 4-Digit OTP (4829)"
-                        style={{ flex: 1, padding: '0.75rem', borderRadius: '12px', border: '1px solid #E5E7EB', fontSize: '1rem', fontWeight: '800', outline: 'none' }}
+                        style={{
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          padding: '0.85rem 1rem',
+                          borderRadius: '12px',
+                          border: '1.5px solid #E6A700',
+                          fontSize: '1.15rem',
+                          fontWeight: '800',
+                          letterSpacing: '3px',
+                          textAlign: 'center',
+                          outline: 'none',
+                          backgroundColor: '#FFFFFF',
+                        }}
                       />
                       <button
                         type="button"
                         onClick={handleVerifyOtpSubmit}
-                        className="btn btn-primary"
-                        style={{ whiteSpace: 'nowrap', padding: '0.75rem 1.15rem' }}
+                        className="btn btn-primary btn-shine"
+                        style={{
+                          width: '100%',
+                          padding: '0.85rem',
+                          fontSize: '0.95rem',
+                          fontWeight: '800',
+                          borderRadius: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.4rem',
+                        }}
                       >
-                        Verify OTP
+                        <span>✓ Verify OTP & Start Trip ➔</span>
                       </button>
                     </form>
-                    {otpError && <div style={{ fontSize: '0.825rem', color: '#EF4444', marginTop: '0.5rem', fontWeight: '700' }}>{otpError}</div>}
+                    {otpError && <div style={{ fontSize: '0.825rem', color: '#EF4444', marginTop: '0.6rem', fontWeight: '700', textAlign: 'center' }}>{otpError}</div>}
                   </div>
 
                   {/* Driver Actions */}
