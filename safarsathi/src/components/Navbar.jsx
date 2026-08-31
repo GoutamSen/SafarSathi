@@ -116,51 +116,6 @@ export default function Navbar({
           </div>
         </a>
 
-        {/* Global Role Switcher Pill */}
-        <div style={{ display: 'flex', alignItems: 'center', backgroundColor: '#F3F4F6', borderRadius: '12px', padding: '3px', border: '1px solid #E5E7EB' }}>
-          <button
-            type="button"
-            onClick={() => onRoleChange && onRoleChange('passenger')}
-            style={{
-              padding: '0.35rem 0.75rem',
-              borderRadius: '9px',
-              border: 'none',
-              backgroundColor: currentRoleMode === 'passenger' ? '#E6A700' : 'transparent',
-              color: currentRoleMode === 'passenger' ? '#111827' : '#6B7280',
-              fontWeight: '800',
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            🧳 Passenger
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onRoleChange && onRoleChange('driver')}
-            style={{
-              padding: '0.35rem 0.75rem',
-              borderRadius: '9px',
-              border: 'none',
-              backgroundColor: currentRoleMode === 'driver' ? '#111827' : 'transparent',
-              color: currentRoleMode === 'driver' ? '#FFFFFF' : '#6B7280',
-              fontWeight: '800',
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.3rem',
-              transition: 'all 0.2s ease',
-            }}
-          >
-            🚗 Driver Host
-          </button>
-        </div>
-
         {/* Centered Desktop Nav Links */}
         <nav
           style={{ display: 'none', alignItems: 'center', gap: '2rem' }}
@@ -264,27 +219,74 @@ export default function Navbar({
           </button>
         </div>
 
-        {/* Mobile Hamburger Toggle */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle Navigation Menu"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '36px',
-            height: '36px',
-            borderRadius: '9px',
-            border: 'none',
-            backgroundColor: 'transparent',
-            color: '#111827',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-          className="mobile-toggle"
-        >
-          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        {/* Mobile Action Controls & Hamburger */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }} className="mobile-actions-container">
+          {driverNotificationsCount > 0 && (
+            <button
+              type="button"
+              onClick={onOpenDriverNotification}
+              title={`${driverNotificationsCount} New Passenger Seat Request(s)`}
+              style={{
+                position: 'relative',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '34px',
+                height: '34px',
+                borderRadius: '50%',
+                backgroundColor: '#FFF4CC',
+                border: '1.5px solid #E6A700',
+                color: '#111827',
+                cursor: 'pointer',
+              }}
+            >
+              <Bell size={16} />
+              <span
+                style={{
+                  position: 'absolute',
+                  top: '-2px',
+                  right: '-2px',
+                  backgroundColor: '#E6A700',
+                  color: '#111827',
+                  fontSize: '0.65rem',
+                  fontWeight: '800',
+                  width: '15px',
+                  height: '15px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: '1.5px solid #FFFFFF',
+                  animation: 'pulse 1.5s infinite',
+                }}
+              >
+                {driverNotificationsCount}
+              </span>
+            </button>
+          )}
+
+          {/* Mobile Hamburger Toggle */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle Navigation Menu"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '36px',
+              height: '36px',
+              borderRadius: '9px',
+              border: 'none',
+              backgroundColor: 'transparent',
+              color: '#111827',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+            }}
+            className="mobile-toggle"
+          >
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu Drawer */}

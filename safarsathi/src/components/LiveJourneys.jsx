@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MapPin, Clock, Users, Car, Star, ShieldCheck, ArrowRight, Navigation, Sparkles } from 'lucide-react';
 
-export default function LiveJourneys({ publishedJourneys = [], onSelectJourney, onOpenAllJourneys }) {
+export default function LiveJourneys({ publishedJourneys = [], onSelectJourney, onOpenAllJourneys, currentRoleMode = 'passenger' }) {
   const [activeFilter, setActiveFilter] = useState('All');
 
   const defaultJourneysData = [
@@ -186,15 +186,15 @@ export default function LiveJourneys({ publishedJourneys = [], onSelectJourney, 
                   justifyContent: 'space-between',
                   marginBottom: '1.25rem',
                 }}>
-                  {journey.isUserPublished ? (
-                    <div className="badge-pill badge-green" style={{ fontSize: '0.775rem', padding: '0.25rem 0.75rem' }}>
-                      <span className="pulse-indicator" />
-                      <span style={{ fontWeight: '700' }}>🌟 YOUR PUBLISHED RIDE</span>
+                  {journey.isUserPublished || (journey.driverName && journey.driverName.includes('You')) ? (
+                    <div className="badge-pill badge-green" style={{ fontSize: '0.775rem', padding: '0.25rem 0.75rem', backgroundColor: '#FFF4CC', color: '#111827', border: '1px solid #E6A700' }}>
+                      <span className="pulse-indicator" style={{ backgroundColor: '#E6A700' }} />
+                      <span style={{ fontWeight: '800' }}>🌟 YOUR PUBLISHED RIDE</span>
                     </div>
                   ) : (
                     <div className="badge-pill badge-green" style={{ fontSize: '0.775rem', padding: '0.25rem 0.75rem' }}>
                       <span className="pulse-indicator" />
-                      <span>🟡 {journey.vehicleType === 'Bike' ? 'BIKE RIDE' : 'CAR POOL'}</span>
+                      <span>🟡 {journey.vehicleType === 'Bike' ? 'VERIFIED BIKE RIDE' : 'VERIFIED CAR POOL'}</span>
                     </div>
                   )}
 
@@ -327,7 +327,7 @@ export default function LiveJourneys({ publishedJourneys = [], onSelectJourney, 
                   return (
                     <button
                       onClick={() => onSelectJourney(journey)}
-                      className="btn btn-primary"
+                      className="btn btn-primary btn-shine"
                       style={{
                         width: '100%',
                         padding: '0.8rem',

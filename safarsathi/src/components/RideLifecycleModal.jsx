@@ -35,6 +35,9 @@ import {
 import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
+import { realtimeSync } from '../services/realtimeSync';
+import LiveRideChat from './LiveRideChat';
+
 // Helper component to trigger Leaflet map resize automatically
 function MapResizer({ isFullScreen }) {
   const map = useMap();
@@ -462,9 +465,11 @@ export default function RideLifecycleModal({
 }) {
   if (!journey) return null;
 
-  const [activeRole, setActiveRole] = useState(initialRole);
+  const isMine = journey.isUserPublished || (journey.driverName && journey.driverName.includes('You'));
+  const effectiveRole = initialRole === 'driver' || isMine ? 'driver' : 'passenger';
+  const [activeRole, setActiveRole] = useState(effectiveRole);
   const [currentStep, setCurrentStep] = useState(
-    initialRole === 'driver' ? RIDE_STATUS.HOST_REQUESTED : RIDE_STATUS.DRIVER_ACCEPTED
+    effectiveRole === 'driver' ? RIDE_STATUS.HOST_REQUESTED : RIDE_STATUS.DRIVER_ACCEPTED
   );
 
   const pricePerSeatNum = parseInt((journey.costPerSeat || '₹160').replace('₹', '')) || 160;
@@ -486,15 +491,33 @@ export default function RideLifecycleModal({
   const [driverRating, setDriverRating] = useState(5);
   const [feedbackText, setFeedbackText] = useState('');
 
+  // Real-time Multi-Tab Sync Listener
+  useEffect(() => {
+    const unsubscribe = realtimeSync.subscribe((event) => {
+      if (event.type === 'BOOKING_ACCEPTED') {
+        setCurrentStep(RIDE_STATUS.DRIVER_ACCEPTED);
+      } else if (event.type === 'TRIP_STARTED') {
+        setCurrentStep(RIDE_STATUS.TRIP_STARTED);
+      } else if (event.type === 'PAYMENT_PENDING') {
+        setCurrentStep(RIDE_STATUS.PAYMENT_PENDING);
+      } else if (event.type === 'PAYMENT_COMPLETED') {
+        setCurrentStep(RIDE_STATUS.PAYMENT_COMPLETED);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const handleDriverAccept = () => {
     setCurrentStep(RIDE_STATUS.DRIVER_ACCEPTED);
+    realtimeSync.broadcast('BOOKING_ACCEPTED', { rideId: journey.id, otp: '4829' });
   };
 
   const handleVerifyOtpSubmit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (enteredOtp === generatedOtp || enteredOtp === '4829') {
       setOtpError('');
       setCurrentStep(RIDE_STATUS.TRIP_STARTED);
+      realtimeSync.broadcast('TRIP_STARTED', { rideId: journey.id });
     } else {
       setOtpError('❌ Incorrect OTP code! Please check passenger pass.');
     }
@@ -507,6 +530,7 @@ export default function RideLifecycleModal({
     }
     setChecklistError('');
     setCurrentStep(RIDE_STATUS.TRIP_STARTED);
+    realtimeSync.broadcast('TRIP_STARTED', { rideId: journey.id });
   };
 
   const handleProcessPayment = () => {
@@ -514,6 +538,7 @@ export default function RideLifecycleModal({
     setTimeout(() => {
       setPaymentProcessing(false);
       setCurrentStep(RIDE_STATUS.PAYMENT_COMPLETED);
+      realtimeSync.broadcast('PAYMENT_COMPLETED', { rideId: journey.id, totalFare });
 
       if (onBookingConfirmed && activeRole === 'passenger') {
         onBookingConfirmed({
@@ -598,64 +623,6 @@ export default function RideLifecycleModal({
           </button>
         </div>
 
-        {/* Modal Role Switcher */}
-        <div style={{ padding: '1rem 1.5rem', backgroundColor: '#FFF4CC', borderBottom: '1px solid rgba(230, 167, 0, 0.25)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', fontWeight: '700', color: '#C98F00' }}>
-            <Sliders size={16} />
-            <span>ROLE VIEW:</span>
-          </div>
-
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <button
-              onClick={() => setActiveRole('passenger')}
-              style={{
-                padding: '0.35rem 0.85rem',
-                borderRadius: 'var(--radius-full)',
-                border: 'none',
-                backgroundColor: activeRole === 'passenger' ? '#E6A700' : '#FFFFFF',
-                color: '#111827',
-                fontSize: '0.8rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-              }}
-            >
-              👤 Passenger
-            </button>
-
-            <button
-              onClick={() => setActiveRole('driver')}
-              style={{
-                padding: '0.35rem 0.85rem',
-                borderRadius: 'var(--radius-full)',
-                border: 'none',
-                backgroundColor: activeRole === 'driver' ? '#E6A700' : '#FFFFFF',
-                color: '#111827',
-                fontSize: '0.8rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-              }}
-            >
-              🚗 Driver Host
-            </button>
-
-            <button
-              onClick={() => setActiveRole('admin')}
-              style={{
-                padding: '0.35rem 0.85rem',
-                borderRadius: 'var(--radius-full)',
-                border: 'none',
-                backgroundColor: activeRole === 'admin' ? '#111827' : '#FFFFFF',
-                color: activeRole === 'admin' ? '#FFFFFF' : '#111827',
-                fontSize: '0.8rem',
-                fontWeight: '800',
-                cursor: 'pointer',
-              }}
-            >
-              🛡️ Admin
-            </button>
-          </div>
-        </div>
-
         {/* Modal Body Content */}
         <div style={{ padding: '1.5rem', flex: 1, overflowY: 'auto', maxWidth: '760px', margin: '0 auto', width: '100%' }}>
 
@@ -729,13 +696,50 @@ export default function RideLifecycleModal({
 
               {/* Step Flow Controls */}
               {currentStep === RIDE_STATUS.DRIVER_ACCEPTED && (
-                <button
-                  onClick={() => setCurrentStep(RIDE_STATUS.CHECKLIST_VERIFIED)}
-                  className="btn btn-primary btn-shine"
-                  style={{ width: '100%', padding: '0.9rem' }}
-                >
-                  Verify Vehicle & Board Ride ➔
-                </button>
+                <div style={{ backgroundColor: '#ECFDF5', borderRadius: '18px', padding: '1.25rem', border: '1.5px solid #10B981', marginBottom: '1.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#047857', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <CheckCircle2 size={16} /> YOUR SEAT IS CONFIRMED!
+                    </span>
+                    <span style={{ fontSize: '0.75rem', backgroundColor: '#10B981', color: '#FFFFFF', padding: '0.2rem 0.65rem', borderRadius: '12px', fontWeight: '800' }}>
+                      🟢 DRIVER ACCEPTED
+                    </span>
+                  </div>
+
+                  <h4 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#111827', marginBottom: '0.35rem' }}>
+                    {journey.routeFrom || 'Indore'} ➔ {journey.routeTo || 'Khargone'}
+                  </h4>
+
+                  <div style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', padding: '0.9rem', border: '1px solid #A7F3D0', marginBottom: '0.85rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem', fontSize: '0.825rem' }}>
+                    <div>
+                      <span style={{ color: '#6B7280', fontSize: '0.725rem', display: 'block', fontWeight: '600' }}>Verified Driver Host</span>
+                      <strong style={{ color: '#111827' }}>{journey.driverName || 'Rajesh Sharma'} (★ 4.9)</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#6B7280', fontSize: '0.725rem', display: 'block', fontWeight: '600' }}>Departure Time & Date</span>
+                      <strong style={{ color: '#111827' }}>{journey.departureTime || 'Today, 08:30 AM'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#6B7280', fontSize: '0.725rem', display: 'block', fontWeight: '600' }}>Vehicle Information</span>
+                      <strong style={{ color: '#111827' }}>{journey.vehicleModel || 'Tata Nexon EV'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: '#6B7280', fontSize: '0.725rem', display: 'block', fontWeight: '600' }}>Confirmed Fare Share</span>
+                      <strong style={{ color: '#047857' }}>₹{totalFare}</strong>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentStep(RIDE_STATUS.CHECKLIST_VERIFIED)}
+                    className="btn btn-primary btn-shine"
+                    style={{ width: '100%', padding: '0.9rem', marginBottom: '1.25rem' }}
+                  >
+                    Verify Vehicle & Reveal Pickup OTP ➔
+                  </button>
+
+                  {/* Real-time Cross-Tab Live Chat */}
+                  <LiveRideChat journey={journey} currentRole="passenger" />
+                </div>
               )}
 
               {currentStep === RIDE_STATUS.CHECKLIST_VERIFIED && (
@@ -836,20 +840,64 @@ export default function RideLifecycleModal({
             <div>
               {currentStep !== RIDE_STATUS.TRIP_STARTED && currentStep !== RIDE_STATUS.TRIP_COMPLETED && currentStep !== RIDE_STATUS.PAYMENT_COMPLETED && (
                 <>
-                  <div style={{ backgroundColor: '#FFF4CC', borderRadius: '18px', padding: '1.25rem', border: '1.5px solid #E6A700', marginBottom: '1.5rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#C98F00', fontWeight: '800' }}>DRIVER HOST CONTROL PANEL</span>
-                      <span style={{ fontSize: '0.75rem', backgroundColor: '#FFFFFF', color: '#111827', padding: '0.2rem 0.65rem', borderRadius: 'var(--radius-full)', fontWeight: '800' }}>
-                        1 Pending Request
-                      </span>
+                  {/* Driver Host Alert / Confirmed Card */}
+                  {currentStep === RIDE_STATUS.DRIVER_ACCEPTED ? (
+                    <div style={{ backgroundColor: '#ECFDF5', borderRadius: '18px', padding: '1.25rem', border: '1.5px solid #10B981', marginBottom: '1.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#047857', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <CheckCircle2 size={16} /> CONFIRMED RIDE BOOKING
+                        </span>
+                        <span style={{ fontSize: '0.75rem', backgroundColor: '#10B981', color: '#FFFFFF', padding: '0.2rem 0.65rem', borderRadius: '12px', fontWeight: '800' }}>
+                          🟢 REQUEST ACCEPTED
+                        </span>
+                      </div>
+
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#111827', marginBottom: '0.35rem' }}>
+                        {journey.routeFrom || 'Indore'} ➔ {journey.routeTo || 'Khargone'}
+                      </h4>
+
+                      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', padding: '0.9rem', border: '1px solid #A7F3D0', marginBottom: '0.85rem', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem', fontSize: '0.825rem' }}>
+                        <div>
+                          <span style={{ color: '#6B7280', fontSize: '0.725rem', display: 'block', fontWeight: '600' }}>Confirmed Passenger</span>
+                          <strong style={{ color: '#111827' }}>Rahul S. (★ 4.9 Rider)</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#6B7280', fontSize: '0.725rem', display: 'block', fontWeight: '600' }}>Departure Time & Date</span>
+                          <strong style={{ color: '#111827' }}>{journey.departureTime || 'Today, 08:30 AM'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#6B7280', fontSize: '0.725rem', display: 'block', fontWeight: '600' }}>Pickup Point</span>
+                          <strong style={{ color: '#111827' }}>{journey.currentLocation || 'Bhawarkua Square'}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: '#6B7280', fontSize: '0.725rem', display: 'block', fontWeight: '600' }}>Confirmed Seat & Fare</span>
+                          <strong style={{ color: '#047857' }}>{requestedSeats} Seat(s) • ₹{totalFare}</strong>
+                        </div>
+                      </div>
+
+                      <div style={{ fontSize: '0.8rem', color: '#065F46', fontWeight: '700', backgroundColor: '#D1FAE5', padding: '0.6rem 0.75rem', borderRadius: '10px', textAlign: 'center' }}>
+                        🔑 Enter Passenger's 4-Digit Pickup OTP (4829) below to verify & start live trip!
+                      </div>
                     </div>
-                    <h4 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827', marginBottom: '0.25rem' }}>
-                      Passenger Seat Request Alert
-                    </h4>
-                    <div style={{ fontSize: '0.875rem', color: '#4B5563' }}>
-                      Rider <strong>Rahul S.</strong> requested {requestedSeats} seat(s) • Total Fare: <strong style={{ color: '#C98F00' }}>₹{totalFare}</strong>
+                  ) : (
+                    <div style={{ backgroundColor: '#FFF4CC', borderRadius: '18px', padding: '1.25rem', border: '1.5px solid #E6A700', marginBottom: '1.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#C98F00', fontWeight: '800' }}>DRIVER HOST CONTROL ROOM</span>
+                        <span style={{ fontSize: '0.75rem', backgroundColor: '#FFFFFF', color: '#15803D', padding: '0.25rem 0.65rem', borderRadius: '12px', fontWeight: '800' }}>
+                          🟢 RIDE LIVE (0 Requests)
+                        </span>
+                      </div>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#111827', marginBottom: '0.35rem' }}>
+                        {journey.routeFrom || 'Indore'} ➔ {journey.routeTo || 'segava'}
+                      </h4>
+                      <div style={{ fontSize: '0.85rem', color: '#4B5563', backgroundColor: '#FFFFFF', padding: '0.75rem 0.9rem', borderRadius: '12px', border: '1px solid #FDE68A', marginBottom: '0.85rem' }}>
+                        📍 Pickup: <strong>{journey.currentLocation || 'Indore Vijay Nagar Circle'}</strong> • Departure: <strong>{journey.departureTime || 'Today'}</strong>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#B45309', fontWeight: '700', textAlign: 'center' }}>
+                        ⏳ Waiting for passengers to book seats... As soon as a request arrives, you will receive a real-time sound & popup alert!
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* OTP Entry for Driver */}
                   <div style={{ backgroundColor: '#FAFAFA', borderRadius: '18px', padding: '1.25rem', border: '1px solid #E5E7EB', marginBottom: '1.5rem' }}>
@@ -903,15 +951,22 @@ export default function RideLifecycleModal({
                     {otpError && <div style={{ fontSize: '0.825rem', color: '#EF4444', marginTop: '0.6rem', fontWeight: '700', textAlign: 'center' }}>{otpError}</div>}
                   </div>
 
-                  {/* Driver Actions */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                    <button onClick={handleDriverAccept} className="btn btn-primary btn-shine" style={{ padding: '0.85rem' }}>
-                      Accept Request ➔
-                    </button>
-                    <button onClick={onClose} className="btn btn-secondary" style={{ padding: '0.85rem' }}>
-                      Decline
-                    </button>
-                  </div>
+                  {/* Real-time Cross-Tab Live Chat for Driver */}
+                  {currentStep === RIDE_STATUS.DRIVER_ACCEPTED && (
+                    <LiveRideChat journey={journey} currentRole="driver" />
+                  )}
+
+                  {/* Driver Actions - Only shown BEFORE request is accepted */}
+                  {currentStep !== RIDE_STATUS.DRIVER_ACCEPTED && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                      <button onClick={handleDriverAccept} className="btn btn-primary btn-shine" style={{ padding: '0.85rem' }}>
+                        Accept Request ➔
+                      </button>
+                      <button onClick={onClose} className="btn btn-secondary" style={{ padding: '0.85rem' }}>
+                        Decline
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
 

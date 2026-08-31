@@ -15,6 +15,8 @@ import { JourneyDetailModal, OfferRideModal, JoinModal } from './components/Moda
 import RideLifecycleModal from './components/RideLifecycleModal';
 import RouteExplorerModal from './components/RouteExplorerModal';
 
+import { realtimeSync } from './services/realtimeSync';
+
 export default function App() {
   const [selectedJourney, setSelectedJourney] = useState(null);
   const [selectedCorridor, setSelectedCorridor] = useState(null);
@@ -44,6 +46,44 @@ export default function App() {
     }
   ]);
   const [currentRoleMode, setCurrentRoleMode] = useState('passenger'); // 'passenger' | 'driver'
+  const [activeModalRole, setActiveModalRole] = useState(null);
+  const [pendingDriverNotification, setPendingDriverNotification] = useState(null);
+
+  // Real-Time Multi-Tab Cross-Communication Subscription Engine
+  React.useEffect(() => {
+    const unsubscribe = realtimeSync.subscribe((data) => {
+      const { type, payload } = data;
+      if (type === 'RIDE_PUBLISHED' && payload) {
+        setPublishedJourneys((prev) => {
+          if (prev.some((j) => j.id === payload.id)) return prev;
+          return [payload, ...prev];
+        });
+        showToast(`🔔 LIVE MULTI-TAB ALERT: New Ride Published "${payload.routeFrom} ➔ ${payload.routeTo}" by ${payload.driverName}!`);
+      } else if (type === 'SEAT_REQUESTED' && payload) {
+        setPendingDriverNotification({
+          id: `req-${Date.now()}`,
+          passengerName: 'Rahul (Rider ★ 4.9)',
+          routeFrom: payload.routeFrom || 'Indore',
+          routeTo: payload.routeTo || 'Khargone',
+          pickupPoint: payload.pickupPoint || 'Bhawarkua Square',
+          requestedSeats: payload.requestedSeats || 1,
+          totalFare: payload.totalFare || 160,
+          time: 'Just Now',
+        });
+        showToast(`🔔 REAL-TIME ALERT: New Passenger Seat Request received!`);
+      } else if (type === 'BOOKING_ACCEPTED') {
+        setConfirmedBookings((prev) =>
+          prev.map((b) => ({ ...b, bookingStatus: 'BOOKING_CONFIRMED' }))
+        );
+        showToast(`🎉 REAL-TIME ALERT: Driver Accepted Request! Pickup OTP Unlocked: 4829.`);
+      } else if (type === 'TRIP_STARTED') {
+        showToast(`🟢 REAL-TIME ALERT: Trip Started! Highway Live GPS Tracking active.`);
+      } else if (type === 'PAYMENT_COMPLETED') {
+        showToast(`🎉 REAL-TIME ALERT: Payment Completed Successfully! Fare settled.`);
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleRoleChange = (newRole) => {
     setCurrentRoleMode(newRole);
@@ -78,13 +118,13 @@ export default function App() {
 
   const handlePublishJourney = (newJourney) => {
     setPublishedJourneys((prev) => [newJourney, ...prev]);
-    showToast(`🎉 Journey Published! Your route "${newJourney.routeFrom} → ${newJourney.routeTo}" is now live.`);
+    showToast(`🎉 Ride Published Successfully! Navigated to My Published Rides dashboard.`);
     setTimeout(() => {
-      const liveSec = document.getElementById('live-journeys');
-      if (liveSec) {
-        liveSec.scrollIntoView({ behavior: 'smooth' });
+      const pubSec = document.getElementById('my-published-rides');
+      if (pubSec) {
+        pubSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
-    }, 100);
+    }, 150);
   };
 
   React.useEffect(() => {
@@ -169,8 +209,6 @@ export default function App() {
     showToast('👤 Passenger Mode: Browse live rides below and click "Request Seat" to share a journey!');
     handleFindClick();
   };
-
-  const [pendingDriverNotification, setPendingDriverNotification] = useState(null);
 
   const handleDriverRoleClick = () => {
     setActiveModalRole('driver');
@@ -425,9 +463,155 @@ export default function App() {
           </section>
         )}
 
+        {/* 2.6 MY PUBLISHED RIDES & DRIVER DASHBOARD */}
+        {publishedJourneys.length > 0 && (
+          <section id="my-published-rides" className="container" style={{ marginTop: '2rem', marginBottom: '1.5rem' }}>
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              border: '2px solid #E5E7EB',
+              borderRadius: '24px',
+              padding: '1.5rem',
+              color: '#111827',
+              boxShadow: 'var(--shadow-md)',
+            }}>
+              {/* Header Bar */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    🚗 My Published Rides
+                  </h3>
+                  <span className="badge-pill" style={{ backgroundColor: '#FFF4CC', color: '#C98F00', fontSize: '0.775rem', fontWeight: '800', padding: '0.2rem 0.65rem' }}>
+                    {publishedJourneys.length} Active Ride{publishedJourneys.length > 1 ? 's' : ''}
+                  </span>
+                </div>
+
+                <button
+                  onClick={handleOpenOffer}
+                  className="btn btn-primary btn-shine"
+                  style={{ padding: '0.55rem 1.1rem', fontSize: '0.85rem' }}
+                >
+                  + Offer Another Ride ➔
+                </button>
+              </div>
+
+              {/* Grid of Simplified Intelligent Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                {publishedJourneys.map((j) => {
+                  const hasBookedPassengers = (j.confirmedPassengersCount && j.confirmedPassengersCount > 0) ||
+                    confirmedBookings.some((b) => (b.rideId === j.id || (b.routeFrom === j.routeFrom && b.routeTo === j.routeTo && b.id !== 'cb-sample-1')) && b.bookingStatus === 'BOOKING_CONFIRMED');
+                  const hasPendingRequest = pendingDriverNotification && pendingDriverNotification.routeFrom === j.routeFrom && pendingDriverNotification.routeTo === j.routeTo;
+                  const isOtpReady = hasBookedPassengers || hasPendingRequest;
+
+                  return (
+                    <div
+                      key={j.id}
+                      style={{
+                        backgroundColor: '#FAFAFA',
+                        borderRadius: '18px',
+                        padding: '1.25rem',
+                        border: '1.5px solid #E5E7EB',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <div>
+                        {/* Status & Price Row */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                          <div className="badge-pill badge-green" style={{ fontSize: '0.75rem', padding: '0.2rem 0.65rem' }}>
+                            <span className="pulse-indicator" />
+                            <span>🟡 PUBLISHED</span>
+                          </div>
+
+                          <div style={{ fontSize: '1.2rem', fontWeight: '800', color: '#C98F00' }}>
+                            {j.costPerSeat} <span style={{ fontSize: '0.75rem', color: '#6B7280', fontWeight: '500' }}>/ seat</span>
+                          </div>
+                        </div>
+
+                        {/* Route Title */}
+                        <h4 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#111827', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span>{j.routeFrom}</span>
+                          <span style={{ color: '#E6A700' }}>➔</span>
+                          <span>{j.routeTo}</span>
+                        </h4>
+
+                        {/* Simplified Info Box */}
+                        <div style={{
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '12px',
+                          padding: '0.85rem 1rem',
+                          border: '1px solid #E5E7EB',
+                          fontSize: '0.85rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.45rem',
+                          marginBottom: '1.15rem',
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#6B7280' }}>📍 Pickup:</span>
+                            <strong style={{ color: '#111827' }}>{j.currentLocation}</strong>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#6B7280' }}>🕐 Departure:</span>
+                            <strong style={{ color: '#C98F00' }}>{j.departureTime}</strong>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span style={{ color: '#6B7280' }}>{j.vehicleType === 'Bike' ? '🏍️ Vehicle:' : '🚗 Vehicle:'}</span>
+                            <strong style={{ color: '#111827' }}>{j.vehicleModel}</strong>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px dashed #E5E7EB', paddingTop: '0.4rem', marginTop: '0.2rem' }}>
+                            <span style={{ color: '#6B7280' }}>👥 Passenger Status:</span>
+                            <strong style={{ color: hasBookedPassengers ? '#15803D' : (hasPendingRequest ? '#D97706' : '#4B5563'), fontWeight: '800' }}>
+                              {hasBookedPassengers ? '🟢 1 Passenger Confirmed' : (hasPendingRequest ? '🔔 1 Seat Request Alert!' : `👥 ${j.availableSeats} Seat(s) Available`)}
+                            </strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Context-Aware Primary Action Button */}
+                      <div>
+                        <button
+                          onClick={() => {
+                            setSelectedJourney(j);
+                            setActiveModalRole('driver');
+                          }}
+                          className="btn btn-primary btn-shine"
+                          style={{
+                            width: '100%',
+                            padding: '0.8rem',
+                            fontSize: '0.9rem',
+                            backgroundColor: hasBookedPassengers ? '#111827' : (hasPendingRequest ? '#D97706' : '#E6A700'),
+                            borderColor: hasBookedPassengers ? '#111827' : (hasPendingRequest ? '#D97706' : '#E6A700'),
+                            color: (hasBookedPassengers || hasPendingRequest) ? '#FFFFFF' : '#111827',
+                          }}
+                        >
+                          {hasBookedPassengers ? '🔐 Open Driver Control Room ➔' : (hasPendingRequest ? '🔔 Review Request & Control Room ➔' : '⚙️ Manage Ride ➔')}
+                        </button>
+
+                        {/* 3-Dot Quick Options link */}
+                        <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                          <button
+                            type="button"
+                            onClick={() => showToast('⚙️ Ride Settings: Edit Route, Share Pass, or Cancel Ride')}
+                            style={{ background: 'none', border: 'none', color: '#6B7280', fontSize: '0.75rem', cursor: 'pointer', fontWeight: '600' }}
+                          >
+                            ••• Ride Options & Settings
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* 3. LIVE JOURNEYS SECTION */}
         <LiveJourneys
           publishedJourneys={publishedJourneys}
+          currentRoleMode={currentRoleMode}
           onSelectJourney={(journey) => {
             const isMine = journey.isUserPublished || (journey.driverName && journey.driverName.includes('You'));
             if (isMine) {
@@ -494,10 +678,10 @@ export default function App() {
       {selectedJourney && (
         <RideLifecycleModal
           journey={selectedJourney}
-          initialRole={currentRoleMode}
+          initialRole={activeModalRole || (selectedJourney.isUserPublished || (selectedJourney.driverName && selectedJourney.driverName.includes('You')) ? 'driver' : 'passenger')}
           currentUser={currentUser}
           onBookingConfirmed={handleBookingConfirmed}
-          onClose={() => { setSelectedJourney(null); }}
+          onClose={() => { setSelectedJourney(null); setActiveModalRole(null); }}
         />
       )}
 

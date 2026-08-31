@@ -16,6 +16,8 @@ import {
   AlertCircle
 } from 'lucide-react';
 
+import { realtimeSync } from '../services/realtimeSync';
+
 /* ===================================================
    1. JOURNEY DETAIL MODAL
 =================================================== */
@@ -51,6 +53,9 @@ export function JourneyDetailModal({ journey, onClose, onBookingConfirmed }) {
         bookingStatus: 'REQUEST_PENDING',
         departureTime: journey.departureTime || 'Today, 08:30 AM',
       };
+
+      // Broadcast real-time seat request across browser tabs
+      realtimeSync.broadcast('SEAT_REQUESTED', newBookingPass);
 
       if (onBookingConfirmed) {
         onBookingConfirmed(newBookingPass);
@@ -327,6 +332,9 @@ export function OfferRideModal({ onClose, onPublishJourney }) {
         lng: 75.8577 + (Math.random() - 0.5) * 0.02,
         status: 'upcoming',
       };
+
+      // Broadcast real-time published ride across browser tabs
+      realtimeSync.broadcast('RIDE_PUBLISHED', newJourneyObj);
 
       if (onPublishJourney) {
         onPublishJourney(newJourneyObj);
