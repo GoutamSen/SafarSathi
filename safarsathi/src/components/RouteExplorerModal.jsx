@@ -34,7 +34,7 @@ function MapAutoCenter({ center, zoom }) {
   const map = useMap();
   React.useEffect(() => {
     if (map) {
-      map.setView(center, zoom);
+      map.flyTo(center, zoom, { duration: 1.2 });
       map.invalidateSize();
     }
   }, [center, zoom, map]);
@@ -48,6 +48,12 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
   const [selectedRideId, setSelectedRideId] = useState(null); // Default null
   const [mapStyle, setMapStyle] = useState('google-roadmap'); // 'google-roadmap' | 'google-satellite'
   const [showLegend, setShowLegend] = useState(true);
+
+  // Dynamic Map Navigation & Cluster Expansion States
+  const defaultCenter = [22.25, 75.72];
+  const [mapZoom, setMapZoom] = useState(9);
+  const [mapCenterPos, setMapCenterPos] = useState(defaultCenter);
+  const [expandedClusterId, setExpandedClusterId] = useState(null);
 
   // Fallback highway coordinates (Indore -> Khargone via SH-27 / Mhow / Simrol / Maheshwar)
   const defaultFallbackRoute = [
@@ -275,41 +281,161 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
     },
   ];
 
-  // 2. Upcoming Scheduled Rides
+  // 2. Upcoming Scheduled Rides (With Multi-Ride Cluster Support)
   const upcomingRides = [
     {
       id: `re-up-1`,
-      routeFrom: corridor.from || 'Indore',
-      routeTo: corridor.to || 'Khargone',
+      isCluster: true,
+      clusterCount: 4,
       lat: 22.7196,
       lng: 75.8577,
-      clusterCount: 4,
+      hubName: 'Rajwada Pickup Hub',
       currentLocation: 'Rajwada Pickup Hub (4 Rides)',
-      departureTime: 'Today · 10:00 AM',
-      driverName: 'Suresh Patel',
-      driverRating: '4.90',
-      vehicleModel: 'Hyundai Creta (AC)',
-      costPerSeat: '₹180',
-      availableSeats: 2,
-      driverAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+      departureTime: 'Today · 10:00 AM onwards',
+      costPerSeat: '₹160 - ₹220',
       status: 'upcoming',
+      subRides: [
+        {
+          id: `re-up-1-a`,
+          hubId: `re-up-1`,
+          hubName: 'Rajwada Hub',
+          routeFrom: corridor.from || 'Indore',
+          routeTo: corridor.to || 'Khargone',
+          lat: 22.7196,
+          lng: 75.8577,
+          currentLocation: 'Rajwada Hub · Main Gate Stop',
+          departureTime: 'Today · 10:00 AM',
+          driverName: 'Suresh Patel',
+          driverRating: '4.90',
+          vehicleModel: 'Hyundai Creta (AC)',
+          costPerSeat: '₹180',
+          availableSeats: 2,
+          driverAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+          status: 'upcoming',
+        },
+        {
+          id: `re-up-1-b`,
+          hubId: `re-up-1`,
+          hubName: 'Rajwada Hub',
+          routeFrom: corridor.from || 'Indore',
+          routeTo: corridor.to || 'Khargone',
+          lat: 22.7230,
+          lng: 75.8615,
+          currentLocation: 'Rajwada Hub · Cloth Market Junction',
+          departureTime: 'Today · 10:15 AM',
+          driverName: 'Rahul Sharma',
+          driverRating: '4.85',
+          vehicleModel: 'Maruti Suzuki Dzire',
+          costPerSeat: '₹170',
+          availableSeats: 3,
+          driverAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+          status: 'upcoming',
+        },
+        {
+          id: `re-up-1-c`,
+          hubId: `re-up-1`,
+          hubName: 'Rajwada Hub',
+          routeFrom: corridor.from || 'Indore',
+          routeTo: corridor.to || 'Khargone',
+          lat: 22.7165,
+          lng: 75.8540,
+          currentLocation: 'Rajwada Hub · MG Road Stand',
+          departureTime: 'Today · 10:30 AM',
+          driverName: 'Priya Singh',
+          driverRating: '4.92',
+          vehicleModel: 'WagonR (AC)',
+          costPerSeat: '₹160',
+          availableSeats: 4,
+          driverAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+          status: 'upcoming',
+        },
+        {
+          id: `re-up-1-d`,
+          hubId: `re-up-1`,
+          hubName: 'Rajwada Hub',
+          routeFrom: corridor.from || 'Indore',
+          routeTo: corridor.to || 'Khargone',
+          lat: 22.7215,
+          lng: 75.8530,
+          currentLocation: 'Rajwada Hub · Kothari Market',
+          departureTime: 'Today · 11:00 AM',
+          driverName: 'Vikas Gupta',
+          driverRating: '4.88',
+          vehicleModel: 'Innova Crysta (AC)',
+          costPerSeat: '₹220',
+          availableSeats: 2,
+          driverAvatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=200',
+          status: 'upcoming',
+        },
+      ]
     },
     {
       id: `re-up-2`,
-      routeFrom: corridor.from || 'Indore',
-      routeTo: corridor.to || 'Khargone',
+      isCluster: true,
+      clusterCount: 3,
       lat: 22.6900,
       lng: 75.8300,
-      clusterCount: 3,
+      hubName: 'Bhawarkua Station',
       currentLocation: 'Bhawarkua Station (3 Rides)',
-      departureTime: 'Today · 12:30 PM',
-      driverName: 'Neha Verma',
-      driverRating: '4.88',
-      vehicleModel: 'Maruti Suzuki Baleno',
-      costPerSeat: '₹150',
-      availableSeats: 3,
-      driverAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
+      departureTime: 'Today · 12:30 PM onwards',
+      costPerSeat: '₹140 - ₹160',
       status: 'upcoming',
+      subRides: [
+        {
+          id: `re-up-2-a`,
+          hubId: `re-up-2`,
+          hubName: 'Bhawarkua Station',
+          routeFrom: corridor.from || 'Indore',
+          routeTo: corridor.to || 'Khargone',
+          lat: 22.6900,
+          lng: 75.8300,
+          currentLocation: 'Bhawarkua Square · Bus Stand',
+          departureTime: 'Today · 12:30 PM',
+          driverName: 'Neha Verma',
+          driverRating: '4.88',
+          vehicleModel: 'Maruti Suzuki Baleno',
+          costPerSeat: '₹150',
+          availableSeats: 3,
+          driverAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=200',
+          status: 'upcoming',
+        },
+        {
+          id: `re-up-2-b`,
+          hubId: `re-up-2`,
+          hubName: 'Bhawarkua Station',
+          routeFrom: corridor.from || 'Indore',
+          routeTo: corridor.to || 'Khargone',
+          lat: 22.6935,
+          lng: 75.8338,
+          currentLocation: 'Bhawarkua Hub · IT Park Gate',
+          departureTime: 'Today · 01:00 PM',
+          driverName: 'Deepak Mehta',
+          driverRating: '4.91',
+          vehicleModel: 'Hyundai Aura (AC)',
+          costPerSeat: '₹160',
+          availableSeats: 2,
+          driverAvatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+          status: 'upcoming',
+        },
+        {
+          id: `re-up-2-c`,
+          hubId: `re-up-2`,
+          hubName: 'Bhawarkua Station',
+          routeFrom: corridor.from || 'Indore',
+          routeTo: corridor.to || 'Khargone',
+          lat: 22.6868,
+          lng: 75.8262,
+          currentLocation: 'Bhawarkua Hub · Holkar College Road',
+          departureTime: 'Today · 01:30 PM',
+          driverName: 'Pooja Joshi',
+          driverRating: '4.82',
+          vehicleModel: 'Hyundai i20',
+          costPerSeat: '₹140',
+          availableSeats: 1,
+          driverAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=200',
+          status: 'upcoming',
+        },
+      ]
     },
   ];
 
@@ -340,9 +466,29 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
         ? upcomingRides
         : completedRides;
 
+  // Flatten all rides (including sub-rides inside clusters) for easy detail lookup
+  const allFlatRides = currentRidesList.flatMap((r) => (r.subRides ? [r, ...r.subRides] : [r]));
+
   const selectedRide = selectedRideId
-    ? currentRidesList.find((r) => r.id === selectedRideId)
+    ? allFlatRides.find((r) => r.id === selectedRideId)
     : null;
+
+  // Calculate hub rides navigation if selected ride belongs to a hub
+  const currentHubObj = selectedRide && selectedRide.hubId
+    ? upcomingRides.find((h) => h.id === selectedRide.hubId)
+    : null;
+  const currentHubRides = currentHubObj ? currentHubObj.subRides : [];
+  const currentHubIndex = currentHubRides.findIndex((r) => r.id === selectedRide?.id);
+
+  // Cluster Click Handler - Zoom In & Spiderfy/Uncluster Sub-Rides
+  const handleClusterClick = (clusterRide) => {
+    setExpandedClusterId(clusterRide.id);
+    setMapCenterPos([clusterRide.lat, clusterRide.lng]);
+    setMapZoom(13.5);
+    if (clusterRide.subRides && clusterRide.subRides.length > 0) {
+      setSelectedRideId(clusterRide.subRides[0].id);
+    }
+  };
 
   // Distinct Live Vehicle & Cluster Pin Marker
   const createCustomMarkerIcon = (ride, isSelected, status) => {
@@ -721,6 +867,9 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
             onClick={() => {
               setActiveStatus('live');
               setSelectedRideId(null);
+              setExpandedClusterId(null);
+              setMapCenterPos(defaultCenter);
+              setMapZoom(9);
             }}
             style={{
               padding: '0.35rem 0.7rem',
@@ -770,6 +919,9 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
             onClick={() => {
               setActiveStatus('upcoming');
               setSelectedRideId(null);
+              setExpandedClusterId(null);
+              setMapCenterPos(defaultCenter);
+              setMapZoom(9);
             }}
             style={{
               padding: '0.35rem 0.7rem',
@@ -810,6 +962,9 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
             onClick={() => {
               setActiveStatus('completed');
               setSelectedRideId(null);
+              setExpandedClusterId(null);
+              setMapCenterPos(defaultCenter);
+              setMapZoom(9);
             }}
             style={{
               padding: '0.35rem 0.7rem',
@@ -848,16 +1003,48 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
         {/* 3. HERO MAP VIEWPORT CANVAS */}
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
-
+          {/* Floating Reset Zoom Button when Cluster Hub is Expanded */}
+          {expandedClusterId && (
+            <button
+              onClick={() => {
+                setExpandedClusterId(null);
+                setMapCenterPos(defaultCenter);
+                setMapZoom(9);
+                setSelectedRideId(null);
+              }}
+              style={{
+                position: 'absolute',
+                top: '16px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 1000,
+                backgroundColor: '#E6A700',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '20px',
+                padding: '0.45rem 1.1rem',
+                fontSize: '0.775rem',
+                fontWeight: '800',
+                cursor: 'pointer',
+                boxShadow: '0 4px 16px rgba(230, 167, 0, 0.55)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <span>🔍 Back to Corridor Overview (Reset Zoom)</span>
+            </button>
+          )}
 
           <div style={{ flex: 1, width: '100%', height: '100%', position: 'relative', zIndex: 1 }}>
             <MapContainer
-              center={mapCenter}
-              zoom={9}
+              center={mapCenterPos}
+              zoom={mapZoom}
               scrollWheelZoom={true}
               style={{ width: '100%', height: '100%' }}
             >
-              <MapAutoCenter center={mapCenter} zoom={9} />
+              <MapAutoCenter center={mapCenterPos} zoom={mapZoom} />
 
               <TileLayer
                 url={getTileUrl()}
@@ -969,8 +1156,46 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
               {/* End Location Pin (Red Teardrop Pin - Locked to exact end of route) */}
               <Marker position={destinationCoords} icon={endMarkerIcon} />
 
-              {/* Vehicle Pins */}
+              {/* Vehicle Pins & Cluster Unclustering System */}
               {currentRidesList.map((ride) => {
+                if (ride.isCluster && ride.subRides && ride.subRides.length > 0) {
+                  const isExpanded = expandedClusterId === ride.id;
+
+                  if (isExpanded) {
+                    // Render all sub-rides as individual unclustered pins!
+                    return (
+                      <React.Fragment key={`cluster-group-${ride.id}`}>
+                        {ride.subRides.map((subRide) => {
+                          const isSubSelected = selectedRide && selectedRide.id === subRide.id;
+                          return (
+                            <Marker
+                              key={subRide.id}
+                              position={[subRide.lat, subRide.lng]}
+                              icon={createCustomMarkerIcon(subRide, isSubSelected, activeStatus)}
+                              eventHandlers={{
+                                click: () => setSelectedRideId(subRide.id),
+                              }}
+                            />
+                          );
+                        })}
+                      </React.Fragment>
+                    );
+                  } else {
+                    // Render Cluster Pin (+3 / +4 Rides Hub)
+                    return (
+                      <Marker
+                        key={ride.id}
+                        position={[ride.lat, ride.lng]}
+                        icon={createCustomMarkerIcon(ride, false, activeStatus)}
+                        eventHandlers={{
+                          click: () => handleClusterClick(ride),
+                        }}
+                      />
+                    );
+                  }
+                }
+
+                // Normal single ride pin
                 const isSelected = selectedRide && selectedRide.id === ride.id;
                 return (
                   <Marker
@@ -1091,48 +1316,104 @@ export default function RouteExplorerModal({ corridor, onClose, onSelectJourney 
           {/* 4. SLIDE-UP RIDE DETAIL BOTTOM SHEET CARD */}
           {selectedRide && (
             <div
-              style={{
-                backgroundColor: '#FFFFFF',
-                color: '#111827',
-                borderRadius: '24px 24px 0 0',
-                padding: '1.25rem',
-                borderTop: '3px solid #E6A700',
-                boxShadow: '0 -10px 30px rgba(0, 0, 0, 0.3)',
-                zIndex: 2000,
-                position: 'relative',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.35rem',
-                    padding: '0.25rem 0.65rem',
-                    backgroundColor: activeStatus === 'live' ? '#E6F4EA' : activeStatus === 'upcoming' ? '#FFF4CC' : '#F3F4F6',
-                    color: activeStatus === 'live' ? '#137333' : activeStatus === 'upcoming' ? '#C98F00' : '#4B5563',
-                    borderRadius: '20px',
-                    fontSize: '0.7rem',
-                    fontWeight: '800',
-                  }}
-                >
-                  <span
-                    style={{
-                      width: '6px',
-                      height: '6px',
-                      borderRadius: '50%',
-                      backgroundColor: activeStatus === 'live' ? '#10B981' : activeStatus === 'upcoming' ? '#E6A700' : '#6B7280',
-                      display: 'inline-block',
-                    }}
-                  />
-                  <span>
-                    {activeStatus === 'live'
-                      ? '🟢 LIVE ON ROUTE'
-                      : activeStatus === 'upcoming'
-                        ? '🟡 UPCOMING DEPARTURE'
-                        : '⚪ PAST TRIP'}
-                  </span>
-                </div>
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  color: '#111827',
+                  borderRadius: '24px 24px 0 0',
+                  padding: '1.25rem',
+                  borderTop: '3px solid #E6A700',
+                  boxShadow: '0 -10px 30px rgba(0, 0, 0, 0.3)',
+                  zIndex: 2000,
+                  position: 'relative',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.65rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <div
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        padding: '0.25rem 0.65rem',
+                        backgroundColor: activeStatus === 'live' ? '#E6F4EA' : activeStatus === 'upcoming' ? '#FFF4CC' : '#F3F4F6',
+                        color: activeStatus === 'live' ? '#137333' : activeStatus === 'upcoming' ? '#C98F00' : '#4B5563',
+                        borderRadius: '20px',
+                        fontSize: '0.7rem',
+                        fontWeight: '800',
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: '6px',
+                          height: '6px',
+                          borderRadius: '50%',
+                          backgroundColor: activeStatus === 'live' ? '#10B981' : activeStatus === 'upcoming' ? '#E6A700' : '#6B7280',
+                          display: 'inline-block',
+                        }}
+                      />
+                      <span>
+                        {activeStatus === 'live'
+                          ? '🟢 LIVE ON ROUTE'
+                          : activeStatus === 'upcoming'
+                            ? '🟡 UPCOMING DEPARTURE'
+                            : '⚪ PAST TRIP'}
+                      </span>
+                    </div>
+
+                    {/* Multi-Ride Hub Navigator Pill */}
+                    {currentHubRides.length > 1 && (
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem',
+                          padding: '0.2rem 0.55rem',
+                          backgroundColor: '#FEF3C7',
+                          border: '1px solid #FDE68A',
+                          borderRadius: '16px',
+                          fontSize: '0.7rem',
+                          fontWeight: '800',
+                          color: '#B45309',
+                        }}
+                      >
+                        <button
+                          disabled={currentHubIndex <= 0}
+                          onClick={() => setSelectedRideId(currentHubRides[currentHubIndex - 1].id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: currentHubIndex > 0 ? 'pointer' : 'default',
+                            opacity: currentHubIndex > 0 ? 1 : 0.35,
+                            fontSize: '0.75rem',
+                            color: '#B45309',
+                            fontWeight: 'bold',
+                            padding: '0 2px',
+                          }}
+                        >
+                          ◀
+                        </button>
+                        <span>
+                          {selectedRide.hubName || 'Hub'} ({currentHubIndex + 1}/{currentHubRides.length})
+                        </span>
+                        <button
+                          disabled={currentHubIndex >= currentHubRides.length - 1}
+                          onClick={() => setSelectedRideId(currentHubRides[currentHubIndex + 1].id)}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: currentHubIndex < currentHubRides.length - 1 ? 'pointer' : 'default',
+                            opacity: currentHubIndex < currentHubRides.length - 1 ? 1 : 0.35,
+                            fontSize: '0.75rem',
+                            color: '#B45309',
+                            fontWeight: 'bold',
+                            padding: '0 2px',
+                          }}
+                        >
+                          ▶
+                        </button>
+                      </div>
+                    )}
+                  </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                   <div style={{ textAlign: 'right' }}>
