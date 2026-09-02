@@ -25,28 +25,27 @@ export default function MyRidesHubModal({
         position: 'fixed',
         inset: 0,
         zIndex: 100,
-        backgroundColor: 'rgba(17, 24, 39, 0.75)',
-        backdropFilter: 'blur(8px)',
-        WebkitBackdropFilter: 'blur(8px)',
+        backgroundColor: '#FFFFFF',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'stretch',
         justifyContent: 'center',
-        padding: '1rem',
+        padding: 0,
         animation: 'fadeIn 0.2s ease-out',
       }}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: '680px',
-          maxHeight: '90vh',
+          height: '100%',
+          maxWidth: '100%',
+          maxHeight: '100%',
           backgroundColor: '#FFFFFF',
-          borderRadius: '24px',
-          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          borderRadius: 0,
+          boxShadow: 'none',
           display: 'flex',
           flexDirection: 'column',
           overflow: 'hidden',
-          border: '1px solid #E5E7EB',
+          border: 'none',
         }}
       >
         {/* Header */}
