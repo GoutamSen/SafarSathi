@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   MapPin,
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 
 import { realtimeSync } from '../services/realtimeSync';
+import { setupRecaptcha, sendOTP, verifyOTP } from '../services/authService';
 
 /* ===================================================
    1. JOURNEY DETAIL MODAL
@@ -603,20 +604,76 @@ export function OfferRideModal({ onClose, onPublishJourney }) {
    3. JOIN / LOGIN OTP MODAL
 =================================================== */
 export function JoinModal({ mode = 'join', onClose, onSuccess }) {
-  const [phoneNumber, setPhoneNumber] = useState('98260 12345');
-  const [name, setName] = useState('Rahul Sharma');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [name, setName] = useState('');
   const [step, setStep] = useState('phone');
-  const [otp, setOtp] = useState('4829');
+  const [otp, setOtp] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSendOtp = (e) => {
+  // Setup invisible reCAPTCHA when modal opens
+  useEffect(() => {
+    setupRecaptcha('recaptcha-container');
+    return () => {
+      // Cleanup on unmount
+      if (window.recaptchaVerifier) {
+        try { window.recaptchaVerifier.clear(); } catch (_) {}
+        window.recaptchaVerifier = null;
+      }
+    };
+  }, []);
+
+  const handleSendOtp = async (e) => {
     e.preventDefault();
-    setStep('otp');
+    setErrorMsg('');
+    if (!phoneNumber || phoneNumber.replace(/\s/g, '').length < 10) {
+      setErrorMsg('Valid 10-digit mobile number enter karo.');
+      return;
+    }
+    setIsLoading(true);
+    const result = await sendOTP(phoneNumber.replace(/\s/g, ''));
+    setIsLoading(false);
+    if (result.success) {
+      setStep('otp');
+    } else {
+      setErrorMsg(result.error || 'OTP bhejne mein error aaya.');
+    }
   };
 
-  const handleVerifyOtp = (e) => {
+  const handleVerifyOtp = async (e) => {
     e.preventDefault();
-    if (onSuccess) {
-      onSuccess({ name: name || 'Rahul Sharma', phone: phoneNumber });
+    setErrorMsg('');
+    if (!otp || otp.length < 6) {
+      setErrorMsg('6-digit OTP enter karo.');
+      return;
+    }
+    setIsLoading(true);
+    const result = await verifyOTP(otp);
+    setIsLoading(false);
+    if (result.success) {
+      if (onSuccess) {
+        onSuccess({
+          name: name || result.user.displayName || 'SafarSathi User',
+          phone: phoneNumber,
+          uid: result.user.uid,
+          firebaseUser: result.user,
+        });
+      }
+    } else {
+      setErrorMsg(result.error || 'OTP galat hai.');
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setErrorMsg('');
+    setOtp('');
+    setIsLoading(true);
+    // Re-setup recaptcha for resend
+    setupRecaptcha('recaptcha-container');
+    const result = await sendOTP(phoneNumber.replace(/\s/g, ''));
+    setIsLoading(false);
+    if (!result.success) {
+      setErrorMsg(result.error || 'Resend mein error aaya.');
     }
   };
 
@@ -675,57 +732,74 @@ export function JoinModal({ mode = 'join', onClose, onSuccess }) {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    placeholder="Aapka poora naam"
                     required
                     style={{ width: '100%', padding: '0.75rem 1rem', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px', fontSize: '0.9rem', fontWeight: '700', color: '#111827', outline: 'none' }}
                   />
                 </div>
               )}
 
-              <div style={{ marginBottom: '1.5rem' }}>
+              <div style={{ marginBottom: '1.25rem' }}>
                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: '700', color: '#374151', marginBottom: '0.3rem' }}>
                   Mobile Phone Number
                 </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', backgroundColor: '#F9FAFB', border: '1px solid #E5E7EB', borderRadius: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', backgroundColor: '#F9FAFB', border: errorMsg ? '1px solid #EF4444' : '1px solid #E5E7EB', borderRadius: '12px' }}>
                   <span style={{ fontSize: '0.9rem', fontWeight: '800', color: '#E6A700' }}>+91</span>
                   <input
                     type="tel"
                     value={phoneNumber}
                     onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="10-digit mobile number"
+                    maxLength="10"
                     required
                     style={{ width: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.9rem', fontWeight: '700', color: '#111827' }}
                   />
                 </div>
               </div>
 
+              {/* Error Message */}
+              {errorMsg && (
+                <div style={{ color: '#EF4444', fontSize: '0.82rem', fontWeight: '600', marginBottom: '1rem', padding: '0.5rem 0.75rem', backgroundColor: '#FEF2F2', borderRadius: '8px', border: '1px solid #FECACA' }}>
+                  ⚠️ {errorMsg}
+                </div>
+              )}
+
+              {/* Invisible reCAPTCHA container — required for Firebase Phone Auth */}
+              <div id="recaptcha-container"></div>
+
               <button
                 type="submit"
+                disabled={isLoading}
                 className="btn btn-primary btn-shine"
-                style={{ width: '100%', padding: '0.9rem', fontSize: '0.95rem' }}
+                style={{ width: '100%', padding: '0.9rem', fontSize: '0.95rem', opacity: isLoading ? 0.7 : 1 }}
               >
-                Send 4-Digit OTP ➔
+                {isLoading ? '📲 OTP Bhej raha hai...' : 'Send OTP ➔'}
               </button>
             </form>
           ) : (
             <form onSubmit={handleVerifyOtp}>
               <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-                <div style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '0.5rem' }}>
-                  Enter the 4-digit security code sent to <strong>+91 {phoneNumber}</strong>
+                <div style={{ fontSize: '0.85rem', color: '#6B7280', marginBottom: '0.75rem' }}>
+                  6-digit OTP sent to <strong>+91 {phoneNumber}</strong>
                 </div>
                 <input
                   type="text"
-                  maxLength="4"
+                  maxLength="6"
                   value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
+                  onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                  placeholder="------"
+                  autoFocus
                   style={{
-                    width: '180px',
+                    width: '200px',
+                    display: 'block',
                     textAlign: 'center',
-                    fontSize: '1.8rem',
+                    fontSize: '2rem',
                     fontWeight: '800',
-                    letterSpacing: '0.3em',
-                    padding: '0.5rem',
+                    letterSpacing: '0.4em',
+                    padding: '0.6rem',
                     borderRadius: '12px',
-                    border: '2px solid #E6A700',
-                    backgroundColor: '#FFF4CC',
+                    border: errorMsg ? '2px solid #EF4444' : '2px solid #E6A700',
+                    backgroundColor: errorMsg ? '#FEF2F2' : '#FFF4CC',
                     color: '#111827',
                     outline: 'none',
                     margin: '0 auto',
@@ -733,12 +807,29 @@ export function JoinModal({ mode = 'join', onClose, onSuccess }) {
                 />
               </div>
 
+              {/* Error Message */}
+              {errorMsg && (
+                <div style={{ color: '#EF4444', fontSize: '0.82rem', fontWeight: '600', marginBottom: '1rem', padding: '0.5rem 0.75rem', backgroundColor: '#FEF2F2', borderRadius: '8px', border: '1px solid #FECACA', textAlign: 'center' }}>
+                  ⚠️ {errorMsg}
+                </div>
+              )}
+
               <button
                 type="submit"
+                disabled={isLoading}
                 className="btn btn-primary btn-shine"
-                style={{ width: '100%', padding: '0.9rem', fontSize: '0.95rem' }}
+                style={{ width: '100%', padding: '0.9rem', fontSize: '0.95rem', opacity: isLoading ? 0.7 : 1, marginBottom: '0.75rem' }}
               >
-                Verify & Continue ➔
+                {isLoading ? '🔐 Verify ho raha hai...' : 'Verify & Continue ➔'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={isLoading}
+                style={{ width: '100%', background: 'none', border: 'none', color: '#6B7280', fontSize: '0.82rem', cursor: 'pointer', padding: '0.5rem', fontWeight: '600' }}
+              >
+                OTP nahi aaya? Resend karo
               </button>
             </form>
           )}

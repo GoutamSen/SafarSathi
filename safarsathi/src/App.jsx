@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import TrustStats from './components/TrustStats';
@@ -15,8 +15,13 @@ import { JourneyDetailModal, OfferRideModal, JoinModal } from './components/Moda
 import RideLifecycleModal from './components/RideLifecycleModal';
 import RouteExplorerModal from './components/RouteExplorerModal';
 import MyRidesHubModal from './components/MyRidesHubModal';
+import ActiveRidesBottomSheet from './components/ActiveRidesBottomSheet';
+import RideManagementScreen from './components/RideManagementScreen';
 
 import { realtimeSync } from './services/realtimeSync';
+import { onAuthChange, signOut } from './services/authService';
+import { listenToActiveRides, publishRide } from './services/ridesService';
+import { createUserProfile, getUserProfile } from './services/userService';
 
 export default function App() {
   const [selectedJourney, setSelectedJourney] = useState(null);
@@ -24,6 +29,8 @@ export default function App() {
   const [isOfferModalOpen, setIsOfferModalOpen] = useState(false);
   const [isJoinModalOpen, setIsJoinModalOpen] = useState(false);
   const [isMyRidesModalOpen, setIsMyRidesModalOpen] = useState(false);
+  const [isActiveRidesSheetOpen, setIsActiveRidesSheetOpen] = useState(false);
+  const [managementRide, setManagementRide] = useState(null);
   const [joinModalMode, setJoinModalMode] = useState('join');
   const [toastMessage, setToastMessage] = useState(null);
   const [cursorPos, setCursorPos] = useState({ x: -100, y: -100 });
@@ -51,7 +58,36 @@ export default function App() {
   const [activeModalRole, setActiveModalRole] = useState(null);
   const [pendingDriverNotification, setPendingDriverNotification] = useState(null);
 
-  // Real-Time Multi-Tab Cross-Communication Subscription Engine
+  // ── Firebase Auth State Listener ──────────────────────────────
+  // Runs once on mount. Keeps currentUser in sync with Firebase session.
+  useEffect(() => {
+    const unsubAuth = onAuthChange(async (firebaseUser) => {
+      if (firebaseUser) {
+        // User is logged in — fetch their Firestore profile
+        const profileResult = await getUserProfile(firebaseUser.uid);
+        if (profileResult.success) {
+          setCurrentUser({ ...profileResult.profile, firebaseUser });
+        } else {
+          // Profile doesn't exist yet (first login) — will be created in handleLoginSuccess
+          setCurrentUser({ uid: firebaseUser.uid, phone: firebaseUser.phoneNumber, firebaseUser });
+        }
+      } else {
+        // User is logged out
+        setCurrentUser(null);
+      }
+    });
+    return () => unsubAuth();
+  }, []);
+
+  // ── Firestore: Listen to Active Rides (Real-time) ─────────────
+  useEffect(() => {
+    const unsubRides = listenToActiveRides((rides) => {
+      setPublishedJourneys(rides);
+    });
+    return () => unsubRides();
+  }, []);
+
+  // Real-Time Multi-Tab Cross-Communication Subscription Engine (kept for broadcast events)
   React.useEffect(() => {
     const unsubscribe = realtimeSync.subscribe((data) => {
       const { type, payload } = data;
@@ -118,11 +154,29 @@ export default function App() {
     showToast(`🎉 Driver Rajesh Sharma Accepted Request! 4-Digit Pickup OTP Generated: 4829.`);
   };
 
-  const handlePublishJourney = (newJourney) => {
-    setPublishedJourneys((prev) => [newJourney, ...prev]);
-    showToast(`🎉 Ride Published Successfully! Opening your My Rides Hub.`);
+  const handlePublishJourney = async (newJourney) => {
+    // Save to Firestore (real backend)
+    const rideData = {
+      ...newJourney,
+      driverUid: currentUser?.uid || 'anonymous',
+      driverName: currentUser?.name || newJourney.driverName || 'Driver',
+      driverPhone: currentUser?.phone || newJourney.driverPhone || '',
+    };
+
+    const result = await publishRide(rideData);
+
+    if (result.success) {
+      // Firestore listener (listenToActiveRides) will auto-update publishedJourneys
+      showToast(`🎉 Ride Published to Database! Opening your My Rides Hub.`);
+    } else {
+      // Fallback to local state if Firebase not configured yet
+      setPublishedJourneys((prev) => [{ ...newJourney, id: `local-${Date.now()}` }, ...prev]);
+      showToast(`🎉 Ride Published Successfully! Opening your My Rides Hub.`);
+    }
+
     setIsMyRidesModalOpen(true);
   };
+
 
   React.useEffect(() => {
     const handleMouseMove = (e) => {
@@ -184,10 +238,21 @@ export default function App() {
     }
   };
 
-  const handleLoginSuccess = (userData) => {
-    setCurrentUser(userData || { name: 'Rahul Sharma', phone: '9826012345' });
+  const handleLoginSuccess = async (userData) => {
+    // userData comes from JoinModal: { name, phone, uid, firebaseUser }
+    const user = userData || { name: 'Rahul Sharma', phone: '9826012345' };
+    setCurrentUser(user);
     setIsJoinModalOpen(false);
-    showToast(`🎉 Verification Complete! Welcome, ${userData?.name || 'Rahul'}.`);
+    showToast(`🎉 Verification Complete! Welcome, ${user.name || 'SafarSathi User'}.`);
+
+    // Create/update Firestore profile on first login
+    if (user.uid) {
+      await createUserProfile(user.uid, {
+        name: user.name,
+        phone: user.phone,
+        role: 'passenger',
+      });
+    }
 
     if (pendingActionAfterAuth === 'offer_ride') {
       setPendingActionAfterAuth(null);
@@ -508,32 +573,57 @@ export default function App() {
         onFindRideClick={handleFindClick}
       />
 
-      {/* Floating Bottom My Rides Action Pill for Quick Access */}
+      {/* Compact Active Rides Pill — opens Bottom Sheet */}
       {(confirmedBookings.length > 0 || publishedJourneys.length > 0) && (
         <button
-          onClick={() => setIsMyRidesModalOpen(true)}
+          onClick={() => setIsActiveRidesSheetOpen(true)}
           className="btn btn-primary btn-shine"
           style={{
             position: 'fixed',
-            bottom: '24px',
-            right: '24px',
-            zIndex: 90,
-            padding: '0.75rem 1.25rem',
+            top: '66px',
+            right: '12px',
+            zIndex: 900,
+            padding: '0.4rem 0.85rem',
             borderRadius: '9999px',
-            boxShadow: '0 10px 30px rgba(230, 167, 0, 0.4)',
-            fontSize: '0.875rem',
+            boxShadow: '0 4px 20px rgba(230, 167, 0, 0.45)',
+            fontSize: '0.78rem',
             fontWeight: '800',
             display: 'flex',
             alignItems: 'center',
-            gap: '0.5rem',
+            gap: '0.4rem',
+            border: 'none',
           }}
         >
-          <span>🧳 My Active Rides</span>
-          <span style={{ backgroundColor: '#111827', color: '#FFFFFF', padding: '0.15rem 0.55rem', borderRadius: '12px', fontSize: '0.75rem' }}>
+          <span>Active Rides</span>
+          <span style={{ backgroundColor: '#111827', color: '#FFFFFF', padding: '0.08rem 0.48rem', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800' }}>
             {confirmedBookings.length + publishedJourneys.length}
           </span>
         </button>
       )}
+
+      {/* Active Rides Bottom Sheet */}
+      <ActiveRidesBottomSheet
+        isOpen={isActiveRidesSheetOpen}
+        onClose={() => setIsActiveRidesSheetOpen(false)}
+        confirmedBookings={confirmedBookings}
+        publishedJourneys={publishedJourneys}
+        onViewRide={(ride) => {
+          setManagementRide(ride);
+          setIsActiveRidesSheetOpen(false);
+        }}
+        onViewTicket={(booking) => {
+          setSelectedJourney(booking);
+          setActiveModalRole('passenger');
+          setIsActiveRidesSheetOpen(false);
+        }}
+      />
+
+      {/* Ride Management Screen */}
+      <RideManagementScreen
+        ride={managementRide}
+        isOpen={!!managementRide}
+        onClose={() => setManagementRide(null)}
+      />
 
     </div>
   );
